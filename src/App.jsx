@@ -205,8 +205,10 @@ function Countdown(){
 // TELA: CONFIGURAÇÃO SUPABASE
 // ================================================================
 function TelaConfig({onSalvar}){
-  const[url,setUrl]=useState(''),k=useState(''),key=k[0],setKey=k[1];
-  const[err,setErr]=useState(''),loading=useState(false),setL=loading[1],load=loading[0];
+  const[url,setUrl]=useState('');
+  const[key,setKey]=useState('');
+  const[err,setErr]=useState('');
+  const[load,setL]=useState(false);
   const testar=async()=>{
     if(!url.trim()||!key.trim()){setErr('Preencha URL e chave.');return;}
     setL(true);setErr('');
@@ -418,11 +420,15 @@ function TelaInicio({onCadastrar,onLogin,sessao,participantes,pixInfo}){
 // TELA: ACESSO
 // ================================================================
 function TelaAcesso({modo,sb,onSucesso,onVoltar,travado}){
-  const[nome,setNome]=useState(''),pin=useState(''),setPin=pin[1],pinVal=pin[0];
-  const[tel,setTel]=useState(''),numAp=useState(1),setNA=numAp[1],naVal=numAp[0];
+  const[nome,setNome]=useState('');
+  const[pinVal,setPin]=useState('');
+  const[tel,setTel]=useState('');
+  const[naVal,setNA]=useState(1);
   const[indicado,setIndicado]=useState('');
-  const[pinGerado,setPG]=useState(''),loading=useState(false),setL=loading[1],load=loading[0];
-  const[err,setErr]=useState(''),passo=useState(1),setPasso=passo[1],passoV=passo[0];
+  const[pinGerado,setPG]=useState('');
+  const[load,setL]=useState(false);
+  const[err,setErr]=useState('');
+  const[passoV,setPasso]=useState(1);
   const prazo=prazoPassou();
 
   const nomeFinal=naVal>1?`${nome.trim()} (Aposta ${naVal})`:nome.trim();
@@ -522,7 +528,8 @@ function TelaAcesso({modo,sb,onSucesso,onVoltar,travado}){
 // ================================================================
 function FormPronosticos({sb,participanteId,initProgs,bloqueado}){
   const[progs,setProgs]=useState(()=>{const o={};JOGOS.forEach(j=>o[j.id]={casa:'',fora:''});Object.assign(o,initProgs??{});return o;});
-  const[grupo,setGrupo]=useState('A'),saving=useState(false),setSaving=saving[1],sv=saving[0];
+  const[grupo,setGrupo]=useState('A');
+  const[sv,setSaving]=useState(false);
   const[msg,setMsg]=useState('');
   const total=useMemo(()=>JOGOS.filter(j=>progs[j.id]?.casa!==''&&progs[j.id]?.fora!=='').length,[progs]);
 
@@ -705,7 +712,8 @@ function TelaTodos({participantes,resultados}){
 // TELA: SELEÇÕES / PAÍSES
 // ================================================================
 function TelaPaises(){
-  const[busca,setBusca]=useState(''),grupo=useState('Todos'),setGrupo=grupo[1],grV=grupo[0];
+  const[busca,setBusca]=useState('');
+  const[grV,setGrupo]=useState('Todos');
   const[sel,setSel]=useState(null);
   const todos=Object.entries(TIMES);
   const filtrados=todos.filter(([k,t])=>{
@@ -826,17 +834,23 @@ function ResultRow({jogo,resL,savId,onSalvar}){
 // TELA: ADMIN
 // ================================================================
 function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
-  const[auth,setAuth]=useState(false),senhaIn=useState(''),setSI=senhaIn[1],siV=senhaIn[0];
-  const[errS,setErrS]=useState(''),grp=useState('A'),setGrp=grp[1],grV=grp[0];
-  const[resL,setResL]=useState({...resultados}),savId=useState(''),setSavId=savId[1];
-  const[novaSenha,setNS]=useState(''),pixC=useState('326.986.235-00'),setPIXC=pixC[1],pixCV=pixC[0];
-  const[pixT,setPIXT]=useState('CPF'),pixTit=useState('Reginaldo Ferreira da Silva Filho'),setPIXTIT=pixTit[1];
-  const[pixBanco,setPIXB]=useState('Santander'),msg=useState(''),setMsg=msg[1];
+  const[auth,setAuth]=useState(false);
+  const[senhaIn,setSI]=useState('');
+  const[errS,setErrS]=useState('');
+  const[grV,setGrp]=useState('A');
+  const[resL,setResL]=useState({...resultados});
+  const[savId,setSavId]=useState('');
+  const[novaSenha,setNS]=useState('');
+  const[pixCV,setPIXC]=useState('326.986.235-00');
+  const[pixT,setPIXT]=useState('CPF');
+  const[pixTitVal,setPIXTIT]=useState('Reginaldo Ferreira da Silva Filho');
+  const[pixBanco,setPIXB]=useState('Santander');
+  const[msg,setMsg]=useState('');
 
   useEffect(()=>{setResL({...resultados});},[resultados]);
 
   const verificar=async()=>{
-    try{const r=await sb.get('configuracoes','chave=eq.admin_hash&select=valor');const hash=r?.[0]?.valor??djb2(SENHA_ADMIN_PADRAO);if(djb2(siV)===hash){setAuth(true);}else setErrS('❌ Senha incorreta.');}
+    try{const r=await sb.get('configuracoes','chave=eq.admin_hash&select=valor');const hash=r?.[0]?.valor??djb2(SENHA_ADMIN_PADRAO);if(djb2(senhaIn)===hash){setAuth(true);}else setErrS('❌ Senha incorreta.');}
     catch(e){setErrS('Erro: '+e.message);}
   };
 
@@ -947,7 +961,7 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
             </select>
           </div>
           <div><label style={{fontSize:'0.8em',color:'#9ca3af',display:'block',marginBottom:4}}>Chave PIX</label><Inp value={pixCV} onChange={e=>setPIXC(e.target.value)} placeholder="000.000.000-00" /></div>
-          <div><label style={{fontSize:'0.8em',color:'#9ca3af',display:'block',marginBottom:4}}>Nome do Titular</label><Inp value={pixTit[0]} onChange={e=>setPIXTIT(e.target.value)} placeholder="Nome completo" /></div>
+          <div><label style={{fontSize:'0.8em',color:'#9ca3af',display:'block',marginBottom:4}}>Nome do Titular</label><Inp value={pixTitVal} onChange={e=>setPIXTIT(e.target.value)} placeholder="Nome completo" /></div>
           <div><label style={{fontSize:'0.8em',color:'#9ca3af',display:'block',marginBottom:4}}>Banco (opcional)</label><Inp value={pixBanco} onChange={e=>setPIXB(e.target.value)} placeholder="Ex: Nubank, Bradesco..." /></div>
         </div>
         <Btn onClick={salvarPix} cor={COR.azul}>💾 Salvar Configuração PIX</Btn>
@@ -972,12 +986,17 @@ export default function App(){
   // ── Credenciais fixas — conecta automaticamente, sem tela de config ──
   const SB_URL = 'https://jocgtlcmnjearfzjomib.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvY2d0bGNtbmplYXJmempvbWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjU3ODYsImV4cCI6MjA5NDQ0MTc4Nn0.4KX3bgzQPxwXUAABoDxUNEqDCnmibMharQtyc5nFcW0';
-  const[sbCfg,setSbCfg]=useState({url:SB_URL,key:SB_KEY}),sb=useState(null),setSb=sb[1],sbV=sb[0];
-  const[sessao,setSessao]=useState(null),tela=useState('inicio'),setTela=tela[1],telaV=tela[0];
+  const[sbCfg,setSbCfg]=useState({url:SB_URL,key:SB_KEY});
+  const[sbV,setSb]=useState(null);
+  const[sessao,setSessao]=useState(null);
+  const[telaV,setTela]=useState('inicio');
   const[modoAcesso,setMA]=useState('cadastro');
-  const[parts,setParts]=useState([]),resultados=useState({}),setRes=resultados[1],resV=resultados[0];
-  const[pixInfo,setPixInfo]=useState({chave:'326.986.235-00',tipo:'CPF',titular:'Reginaldo Ferreira da Silva Filho',banco:'Santander'}),travado=useState(false),setTravado=travado[1],travV=travado[0];
-  const[loading,setLoading]=useState(true),atualizado=useState(null),setAt=atualizado[1];
+  const[parts,setParts]=useState([]);
+  const[resV,setRes]=useState({});
+  const[pixInfo,setPixInfo]=useState({chave:'326.986.235-00',tipo:'CPF',titular:'Reginaldo Ferreira da Silva Filho',banco:'Santander'});
+  const[travV,setTravado]=useState(false);
+  const[loading,setLoading]=useState(true);
+  const[atualizado,setAt]=useState(null);
 
   useEffect(()=>{(async()=>{
     // Credenciais fixas — conecta direto sem pedir ao usuário
@@ -1045,9 +1064,9 @@ export default function App(){
       <div style={{position:'relative',zIndex:1}}>
         <Header tela={telaV} setTela={setTela} sessao={sessao} onSair={handleSair} travado={travV} />
         {/* Status bar */}
-        {atualizado[0]&&(
+        {atualizado&&(
           <div style={{background:'rgba(0,0,0,0.5)',textAlign:'center',padding:'2px 0',fontSize:'0.7em',color:'#4b5563',borderBottom:`1px solid rgba(255,223,0,0.08)`}}>
-            🕐 Atualizado: {atualizado[0].toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+            🕐 Atualizado: {atualizado.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
             · 👥 {pagos.length} confirmados · 💰 R$ {totalArrecadado.toLocaleString('pt-BR',{minimumFractionDigits:2})}
             · ⚽ {JOGOS.filter(j=>resV[j.id]!=null).length}/72 resultados
             <button className="btn" onClick={loadData} style={{background:'transparent',border:'none',color:'#9ca3af',cursor:'pointer',fontSize:'0.9em',marginLeft:6}}>🔄</button>
