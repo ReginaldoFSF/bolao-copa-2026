@@ -791,6 +791,37 @@ function TelaPaises(){
   );
 }
 
+
+// ================================================================
+// COMPONENTE: ResultRow (separado para respeitar Rules of Hooks)
+// ================================================================
+function ResultRow({jogo,resL,savId,onSalvar}){
+  const tc=TIMES[jogo.casa],tf=TIMES[jogo.fora];
+  const r=resL[jogo.id]??{casa:'',fora:''};
+  const[c,setC]=useState(String(r.casa??''));
+  const[f,setF]=useState(String(r.fora??''));
+  useEffect(()=>{setC(String(r.casa??''));setF(String(r.fora??''));},[resL]);
+  const temRes=r.casa!==''&&r.casa!=null;
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:7,padding:'7px 2px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexWrap:'wrap'}}>
+      <span style={{fontSize:'0.66em',color:'#6b7280',minWidth:36,textAlign:'right'}}>{jogo.data}</span>
+      <span style={{flex:'1 1 100px',textAlign:'right',fontSize:'0.82em',display:'flex',alignItems:'center',gap:4,justifyContent:'flex-end'}}>
+        <Bandeira code={FLAG_CODES[jogo.casa]} size={13}/>{tc.flag} {tc.nome}
+      </span>
+      <input type="number" min="0" max="30" value={c} onChange={e=>setC(e.target.value)} style={{...S.sInp,border:'2px solid rgba(239,68,68,0.4)'}} />
+      <span style={{color:'#6b7280',fontWeight:700}}>×</span>
+      <input type="number" min="0" max="30" value={f} onChange={e=>setF(e.target.value)} style={{...S.sInp,border:'2px solid rgba(239,68,68,0.4)'}} />
+      <span style={{flex:'1 1 100px',fontSize:'0.82em',display:'flex',alignItems:'center',gap:4}}>
+        {tf.flag}<Bandeira code={FLAG_CODES[jogo.fora]} size={13}/> {tf.nome}
+      </span>
+      <Btn onClick={()=>onSalvar(jogo.id,c,f)} disabled={savId===jogo.id||c===''||f===''} cor={COR.verde} style={{fontSize:'0.76em',padding:'5px 11px'}}>
+        {savId===jogo.id?'...':temRes?'🔄':'💾'}
+      </Btn>
+      {temRes&&<Tag cor={COR.verde_claro}>✓ {r.casa}×{r.fora}</Tag>}
+    </div>
+  );
+}
+
 // ================================================================
 // TELA: ADMIN
 // ================================================================
@@ -901,31 +932,9 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
         <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:14}}>
           {Object.keys(GRUPOS).map(g=><button key={g} className="btn" onClick={()=>setGrp(g)} style={{background:grV===g?COR.verde:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,color:'#fff',padding:'5px 12px',cursor:'pointer',fontWeight:700,fontSize:'0.85em'}}>Grupo {g}</button>)}
         </div>
-        {JOGOS.filter(j=>j.grupo===grV).map(j=>{
-          const tc=TIMES[j.casa],tf=TIMES[j.fora],r=resL[j.id]??{casa:'',fora:''};
-          const[c,setC]=useState(String(r.casa??''));
-          const[f,setF]=useState(String(r.fora??''));
-          useEffect(()=>{setC(String(r.casa??''));setF(String(r.fora??''));},[resL]);
-          const temRes=r.casa!==''&&r.casa!=null;
-          return(
-            <div key={j.id} style={{display:'flex',alignItems:'center',gap:7,padding:'7px 2px',borderBottom:'1px solid rgba(255,255,255,0.05)',flexWrap:'wrap'}}>
-              <span style={{fontSize:'0.66em',color:'#6b7280',minWidth:36,textAlign:'right'}}>{j.data}</span>
-              <span style={{flex:'1 1 100px',textAlign:'right',fontSize:'0.82em',display:'flex',alignItems:'center',gap:4,justifyContent:'flex-end'}}>
-                <Bandeira code={FLAG_CODES[j.casa]} size={13}/>{tc.flag} {tc.nome}
-              </span>
-              <input type="number" min="0" max="30" value={c} onChange={e=>setC(e.target.value)} style={{...S.sInp,border:'2px solid rgba(239,68,68,0.4)'}} />
-              <span style={{color:'#6b7280',fontWeight:700}}>×</span>
-              <input type="number" min="0" max="30" value={f} onChange={e=>setF(e.target.value)} style={{...S.sInp,border:'2px solid rgba(239,68,68,0.4)'}} />
-              <span style={{flex:'1 1 100px',fontSize:'0.82em',display:'flex',alignItems:'center',gap:4}}>
-                {tf.flag}<Bandeira code={FLAG_CODES[j.fora]} size={13}/> {tf.nome}
-              </span>
-              <Btn onClick={()=>salvarRes(j.id,c,f)} disabled={savId===j.id||c===''||f===''} cor={COR.verde} style={{fontSize:'0.76em',padding:'5px 11px'}}>
-                {savId===j.id?'...':temRes?'🔄':'💾'}
-              </Btn>
-              {temRes&&<Tag cor={COR.verde_claro}>✓ {r.casa}×{r.fora}</Tag>}
-            </div>
-          );
-        })}
+        {JOGOS.filter(j=>j.grupo===grV).map(j=>(
+          <ResultRow key={j.id} jogo={j} resL={resL} savId={savId} onSalvar={salvarRes} />
+        ))}
       </div>
 
       {/* Config PIX */}
