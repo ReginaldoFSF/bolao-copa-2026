@@ -878,7 +878,7 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
     <div style={{...S.card({maxWidth:400,margin:'40px auto',textAlign:'center',border:`2px solid ${COR.vermelho}44`})}}>
       <div style={{fontSize:'2.5em',marginBottom:10}}>🔐</div>
       <h3 style={{fontFamily:'Barlow Condensed',margin:'0 0 16px',color:COR.amarelo}}>Painel Administrativo</h3>
-      <Inp value={siV} onChange={e=>setSI(e.target.value)} type="password" placeholder={`Senha (padrão: ${SENHA_ADMIN_PADRAO})`} style={{marginBottom:12}} />
+      <Inp value={senhaIn} onChange={e=>setSI(e.target.value)} type="password" placeholder={`Senha (padrão: ${SENHA_ADMIN_PADRAO})`} style={{marginBottom:12}} />
       {errS&&<div style={{color:COR.vermelho,fontSize:'0.85em',marginBottom:10}}>{errS}</div>}
       <Btn onClick={verificar} cor={COR.azul} style={{width:'100%',padding:'12px'}}>Entrar</Btn>
       <p style={{fontSize:'0.72em',color:'#6b7280',marginTop:12}}>Senha padrão: <code style={{color:COR.amarelo}}>{SENHA_ADMIN_PADRAO}</code></p>
