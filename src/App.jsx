@@ -142,9 +142,9 @@ function createSB(url,key){
 
 // Storage pessoal (session)
 const Sess={
-  async get(k){try{const r=await window.storage.get(k,false);return r?JSON.parse(r.value):null;}catch{return null;}},
-  async set(k,v){try{await window.storage.set(k,JSON.stringify(v),false);}catch{}},
-  async del(k){try{await window.storage.delete(k,false);}catch{}},
+  async get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}},
+  async set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}},
+  async del(k){try{localStorage.removeItem(k);}catch{}},
 };
 
 // Utils
@@ -969,7 +969,10 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
 // APP PRINCIPAL
 // ================================================================
 export default function App(){
-  const[sbCfg,setSbCfg]=useState(null),sb=useState(null),setSb=sb[1],sbV=sb[0];
+  // ── Credenciais fixas — conecta automaticamente, sem tela de config ──
+  const SB_URL = 'https://jocgtlcmnjearfzjomib.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvY2d0bGNtbmplYXJmempvbWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjU3ODYsImV4cCI6MjA5NDQ0MTc4Nn0.4KX3bgzQPxwXUAABoDxUNEqDCnmibMharQtyc5nFcW0';
+  const[sbCfg,setSbCfg]=useState({url:SB_URL,key:SB_KEY}),sb=useState(null),setSb=sb[1],sbV=sb[0];
   const[sessao,setSessao]=useState(null),tela=useState('inicio'),setTela=tela[1],telaV=tela[0];
   const[modoAcesso,setMA]=useState('cadastro');
   const[parts,setParts]=useState([]),resultados=useState({}),setRes=resultados[1],resV=resultados[0];
@@ -977,11 +980,14 @@ export default function App(){
   const[loading,setLoading]=useState(true),atualizado=useState(null),setAt=atualizado[1];
 
   useEffect(()=>{(async()=>{
-    const cfg=await Sess.get('bolao:sbcfg');
-    if(cfg?.url&&cfg?.key){setSbCfg(cfg);setSb(createSB(cfg.url,cfg.key));}
+    // Credenciais fixas — conecta direto sem pedir ao usuário
+    const url='https://jocgtlcmnjearfzjomib.supabase.co';
+    const key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvY2d0bGNtbmplYXJmempvbWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjU3ODYsImV4cCI6MjA5NDQ0MTc4Nn0.4KX3bgzQPxwXUAABoDxUNEqDCnmibMharQtyc5nFcW0';
+    setSbCfg({url,key});
+    setSb(createSB(url,key));
     const sess=await Sess.get('bolao:sessao');if(sess)setSessao(sess);
     setLoading(false);
-  })();}, []);
+  })();},[]);
 
   const loadData=useCallback(async()=>{
     if(!sbV) return;
@@ -1029,7 +1035,7 @@ export default function App(){
     </div>
   );
 
-  if(!sbCfg||!sbV) return <><style>{CSS_GLOBAL}</style><TelaConfig onSalvar={handleSbConfig} /></>;
+  // Tela de configuração removida — credenciais fixas no código
 
   return(
     <div style={{minHeight:'100vh',background:`linear-gradient(160deg,#000d22 0%,#003015 40%,#001a08 70%,#000d22 100%)`,color:'#f3f4f6',fontFamily:'Barlow,sans-serif'}}>
