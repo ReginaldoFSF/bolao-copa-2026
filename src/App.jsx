@@ -340,7 +340,7 @@ function Header({tela,setTela,sessao,onSair,travado}){
     <div style={{background:'rgba(0,0,0,0.6)',backdropFilter:'blur(14px)',borderBottom:`2px solid ${COR.amarelo}22`,position:'sticky',top:0,zIndex:100}}>
       <div style={{maxWidth:980,margin:'0 auto',padding:'0 12px',display:'flex',alignItems:'center',gap:6,height:52,flexWrap:'wrap'}}>
         <span style={{fontFamily:'Barlow Condensed',fontWeight:900,fontSize:'1.05em',color:COR.amarelo,marginRight:8,whiteSpace:'nowrap'}}>
-          ⚽ Bolão Família D/M {travado&&<Tag cor='#ef4444'>🔒 TRAVADO</Tag>}
+          ⚽ Bolão Craque do Pitaco {travado&&<Tag cor='#ef4444'>🔒 TRAVADO</Tag>}
         </span>
         <div style={{display:'flex',gap:3,flexWrap:'wrap',flex:1}}>
           {navs.map(n=>(
