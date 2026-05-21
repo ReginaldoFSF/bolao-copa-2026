@@ -1437,9 +1437,9 @@ function gerarPDF(participante, resultados){
 
     // Salvar
     const nome=(participante.nome||'apostador').replace(/\s+/g,'_').toLowerCase();
-    const reg=participante.numero_registro?'_reg'+String(participante.numero_registro).padStart(3,'0'):'';
+    const regArq=participante.numero_registro?'_reg'+String(participante.numero_registro).padStart(3,'0'):'';
     const dt=new Date().toISOString().slice(0,10);
-    doc.save(`bolao_prognosticos_${nome}${reg}_${dt}.pdf`);
+    doc.save(`bolao_prognosticos_${nome}${regArq}_${dt}.pdf`);
   }).catch(e=>{
     alert('Erro ao gerar PDF: '+e.message);
   });
