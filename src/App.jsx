@@ -694,7 +694,12 @@ function FormPronosticos({sb,participanteId,initProgs,bloqueado,pagoIndividualme
         </div>
       )}
       {msg&&<div style={{background:msg.startsWith('✅')?'rgba(34,197,94,0.15)':'rgba(239,68,68,0.15)',border:`1px solid ${msg.startsWith('✅')?COR.verde_claro:COR.vermelho}`,borderRadius:10,padding:'10px 16px',marginBottom:12,fontSize:'0.88em'}}>{msg}</div>}
-      {!bloqueado&&<Btn onClick={salvar} disabled={sv} style={{width:'100%',padding:'13px',fontSize:'1.05em'}}>{sv?'⏳ Salvando...':'💾 Salvar Prognósticos'}</Btn>}
+      {pagoIndividualmente&&(
+        <Btn onClick={()=>window._pdfPart&&gerarPDF(window._pdfPart,window._pdfRes)} cor='#1e3a8a' style={{width:'100%',padding:'11px',fontSize:'0.95em',marginBottom:8}}>
+          📄 Baixar PDF dos Meus Prognósticos
+        </Btn>
+      )}
+      {!bloqueado&&<Btn onClick={salvar} disabled={sv} style={{width:'100%',padding:'13px',fontSize:'1.05em',background:'linear-gradient(135deg,#009c3b,#007a2f)'}}>{sv?'⏳ Salvando...':'✅ Salvar Prognósticos'}</Btn>}
     </div>
   );
 }
@@ -1224,6 +1229,222 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
 }
 
 
+
+// ================================================================
+// GERAR PDF DO PROGNÓSTICO
+// ================================================================
+function gerarPDF(participante, resultados){
+  // Carregar jsPDF dinamicamente se não estiver carregado
+  const carregar = () => new Promise((resolve, reject) => {
+    if(window.jspdf){resolve(window.jspdf.jsPDF);return;}
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload=()=>resolve(window.jspdf.jsPDF);
+    s.onerror=()=>reject(new Error('Falha ao carregar jsPDF'));
+    document.head.appendChild(s);
+  });
+
+  carregar().then(jsPDF=>{
+    const doc = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const W=210, mg=15, lW=W-mg*2;
+    let y=mg;
+
+    // ── Cores ──────────────────────────────────────────────────
+    const VERDE=[0,100,50], AZUL=[0,39,118], AMARELO=[200,160,0];
+    const BRANCO=[255,255,255], CINZA_CLARO=[245,245,245], CINZA=[150,150,150];
+
+    // ── Cabeçalho ──────────────────────────────────────────────
+    doc.setFillColor(...AZUL);
+    doc.rect(0,0,W,32,'F');
+    doc.setTextColor(...BRANCO);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(16);
+    doc.text('BOLÃO CRAQUE DO PITACO',W/2,12,{align:'center'});
+    doc.setFontSize(10);
+    doc.setFont('helvetica','normal');
+    doc.text('Copa do Mundo FIFA 2026 · 1ª Fase (72 jogos)',W/2,19,{align:'center'});
+    doc.setFontSize(8);
+    doc.text('bolao-copa-2026-zeta.vercel.app',W/2,25,{align:'center'});
+    y=38;
+
+    // ── Dados do apostador ────────────────────────────────────
+    doc.setFillColor(...VERDE);
+    doc.rect(mg,y,lW,8,'F');
+    doc.setTextColor(...BRANCO);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.text('DADOS DO APOSTADOR',mg+3,y+5.5);
+    y+=10;
+
+    doc.setFillColor(...CINZA_CLARO);
+    doc.rect(mg,y,lW,22,'F');
+    doc.setTextColor(30,30,30);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.text(participante.nome||'',mg+3,y+7);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    const reg = participante.numero_registro?'Registro: #'+String(participante.numero_registro).padStart(3,'0'):'Aguardando confirmação';
+    doc.text(reg,mg+3,y+13);
+    doc.text('Telefone: '+( participante.telefone||'—'),mg+3,y+18);
+    const dtCad=participante.criado_em?new Date(participante.criado_em).toLocaleString('pt-BR'):'—';
+    const dtAlt=participante.ultima_alt_em?new Date(participante.ultima_alt_em).toLocaleString('pt-BR'):'—';
+    const dtConf=participante.confirmado_em?new Date(participante.confirmado_em).toLocaleString('pt-BR'):'Aguardando';
+    doc.text('Cadastro: '+dtCad+'   |   Última alteração: '+dtAlt,mg+80,y+13);
+    doc.text('Confirmação do admin: '+dtConf,mg+80,y+18);
+    y+=26;
+
+    // ── Resumo de pontuação ──────────────────────────────────
+    const stats=calcStats(participante.pronosticos,resultados);
+    const jogosComRes=JOGOS.filter(j=>resultados[j.id]!=null).length;
+    if(jogosComRes>0){
+      doc.setFillColor(...AMARELO);
+      doc.rect(mg,y,lW,8,'F');
+      doc.setTextColor(...BRANCO);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(9);
+      doc.text('PONTUAÇÃO PARCIAL',mg+3,y+5.5);
+      doc.text(`${stats.pts} pts  |  ${jogosComRes}/72 jogos  |  ${stats.c5} placares exatos (5pts)  |  ${stats.c4} acertos de 4pts`,W-mg-3,y+5.5,{align:'right'});
+      y+=10;
+    }
+
+    // ── Tabela de prognósticos ───────────────────────────────
+    doc.setFillColor(...VERDE);
+    doc.rect(mg,y,lW,8,'F');
+    doc.setTextColor(...BRANCO);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.text('PROGNÓSTICOS — TODOS OS 72 JOGOS',mg+3,y+5.5);
+    doc.text('Gerado em: '+new Date().toLocaleString('pt-BR'),W-mg-3,y+5.5,{align:'right'});
+    y+=10;
+
+    // Cabeçalho da tabela
+    const cols=[mg, mg+22, mg+60, mg+90, mg+120, mg+142, mg+160, lW+mg];
+    const headers=['Grupo','Jogo','Palpite','Resultado','Pts','Situação'];
+    const colW=[22,38,30,30,22,18+lW-160];
+
+    doc.setFillColor(40,40,40);
+    doc.rect(mg,y,lW,6,'F');
+    doc.setTextColor(...BRANCO);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica','bold');
+    headers.forEach((h,i)=>doc.text(h,cols[i]+2,y+4.2));
+    y+=7;
+
+    // Linhas dos jogos
+    let grupoAtual='';
+    JOGOS.forEach((j,idx)=>{
+      if(y>270){
+        doc.addPage();
+        y=mg;
+        // Repetir cabeçalho
+        doc.setFillColor(40,40,40);
+        doc.rect(mg,y,lW,6,'F');
+        doc.setTextColor(...BRANCO);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica','bold');
+        headers.forEach((h,i)=>doc.text(h,cols[i]+2,y+4.2));
+        y+=7;
+      }
+
+      const prog=participante.pronosticos?.[j.id];
+      const res=resultados[j.id];
+      const pts=calcPontos(prog,res);
+      const temProg=prog?.casa!==''&&prog?.casa!=null;
+      const temRes=res!=null;
+
+      // Cor de fundo
+      let bg;
+      if(!temRes){bg=idx%2?BRANCO:CINZA_CLARO;}
+      else if(pts===5){bg=[220,255,220];}
+      else if(pts===4){bg=[210,235,255];}
+      else if(pts===3){bg=[230,245,210];}
+      else if(pts===2||pts===1){bg=[255,250,210];}
+      else{bg=[255,235,235];}
+
+      doc.setFillColor(...bg);
+      doc.rect(mg,y,lW,5.5,'F');
+      doc.setTextColor(30,30,30);
+      doc.setFontSize(7);
+      doc.setFont('helvetica','normal');
+
+      // Separador de grupo
+      if(j.grupo!==grupoAtual){
+        grupoAtual=j.grupo;
+        doc.setFont('helvetica','bold');
+        doc.setTextColor(...VERDE);
+      } else {
+        doc.setFont('helvetica','normal');
+        doc.setTextColor(30,30,30);
+      }
+
+      const nomeJogo=(TIMES[j.casa]?.nome||j.casa)+' × '+(TIMES[j.fora]?.nome||j.fora);
+      const palpite=temProg?`${prog.casa} × ${prog.fora}`:'—';
+      const resultado=temRes?`${res.casa} × ${res.fora}`:'Aguard.';
+
+      let situacao='';
+      if(temRes&&pts!==null){
+        if(pts===5)situacao='Placar exato!';
+        else if(pts===4)situacao='Empate exato';
+        else if(pts===3)situacao='Pl. vencedor';
+        else if(pts===2)situacao='Pl. perdedor';
+        else if(pts===1)situacao='Resultado';
+        else situacao='Errou';
+      } else if(!temRes){situacao='Aguardando';}
+
+      doc.text('Gr. '+j.grupo,cols[0]+2,y+3.8);
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(30,30,30);
+      doc.text(nomeJogo,cols[1]+2,y+3.8,{maxWidth:37});
+      doc.setFont('helvetica','bold');
+      doc.text(palpite,cols[2]+2,y+3.8);
+      if(temRes){
+        doc.setTextColor(...VERDE);
+        doc.text(resultado,cols[3]+2,y+3.8);
+        const ptsCor=pts===5?VERDE:pts>=3?AZUL:pts>=1?[180,120,0]:[180,0,0];
+        doc.setTextColor(...ptsCor);
+        doc.text(pts!==null?String(pts)+'pts':'—',cols[4]+2,y+3.8);
+        doc.setTextColor(60,60,60);
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(6.5);
+        doc.text(situacao,cols[5]+2,y+3.8);
+        doc.setFontSize(7);
+      } else {
+        doc.setTextColor(150,150,150);
+        doc.text('—',cols[3]+2,y+3.8);
+        doc.text('—',cols[4]+2,y+3.8);
+        doc.setFontSize(6.5);
+        doc.text(situacao,cols[5]+2,y+3.8);
+        doc.setFontSize(7);
+      }
+
+      // Linha separadora
+      doc.setDrawColor(220,220,220);
+      doc.line(mg,y+5.5,mg+lW,y+5.5);
+      y+=5.5;
+    });
+
+    // ── Rodapé ─────────────────────────────────────────────────
+    y+=6;
+    if(y>275){doc.addPage();y=mg;}
+    doc.setFillColor(...AZUL);
+    doc.rect(0,282,W,15,'F');
+    doc.setTextColor(...BRANCO);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7.5);
+    doc.text('Bolão Craque do Pitaco · Copa do Mundo FIFA 2026',W/2,288,{align:'center'});
+    doc.text('Responsável: Reginaldo Ferreira da Silva Filho · (71) 99961-9102',W/2,293,{align:'center'});
+
+    // Salvar
+    const nome=(participante.nome||'apostador').replace(/\s+/g,'_').toLowerCase();
+    const reg=participante.numero_registro?'_reg'+String(participante.numero_registro).padStart(3,'0'):'';
+    const dt=new Date().toISOString().slice(0,10);
+    doc.save(`bolao_prognosticos_${nome}${reg}_${dt}.pdf`);
+  }).catch(e=>{
+    alert('Erro ao gerar PDF: '+e.message);
+  });
+}
+
 // ================================================================
 // TELA: GUIA DO APOSTADOR
 // ================================================================
@@ -1474,7 +1695,8 @@ export default function App(){
               {!meuPart?.pago&&<div style={{...S.card({marginBottom:14,background:'rgba(249,115,22,0.1)',border:'1px solid rgba(249,115,22,0.3)'})}}>
                 <p style={{margin:0,fontSize:'0.88em',color:'#fed7aa'}}>⚠️ Realize o PIX de <strong>R$ {VALOR_APOSTA},00</strong> e aguarde a confirmação do administrador para que sua aposta seja validada. Seus prognósticos já estão salvos.</p>
               </div>}
-              <FormPronosticos sb={sbV} participanteId={sessao.id} initProgs={meuPart?.pronosticos??{}} bloqueado={prazoTardioPassou()||travV} pagoIndividualmente={meuPart?.pago_individualmente??false} />
+              <>{(()=>{window._pdfPart=meuPart;window._pdfRes=resV;return null;})()}
+              <FormPronosticos sb={sbV} participanteId={sessao.id} initProgs={meuPart?.pronosticos??{}} bloqueado={prazoTardioPassou()||travV} pagoIndividualmente={meuPart?.pago_individualmente??false} /></>
             </div>
           )}
           {telaV==='classificacao'&&<TelaClassificacao participantes={parts} resultados={resV} sessaoId={sessao?.id} totalArrecadado={totalArrecadado} />}
