@@ -1066,10 +1066,10 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
   const[resL,setResL]=useState({...resultados});
   const[savId,setSavId]=useState('');
   const[novaSenha,setNS]=useState('');
-  const[pixCV,setPIXC]=useState('326.986.235-00');
-  const[pixT,setPIXT]=useState('CPF');
+  const[pixCV,setPIXC]=useState('(71) 99961-9102');
+  const[pixT,setPIXT]=useState('Telefone');
   const[pixTitVal,setPIXTIT]=useState('Reginaldo Ferreira da Silva Filho');
-  const[pixBanco,setPIXB]=useState('Santander');
+  const[pixBanco,setPIXB]=useState('Nubank');
   const[msg,setMsg]=useState('');
 
   useEffect(()=>{setResL({...resultados});},[resultados]);
