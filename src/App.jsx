@@ -428,7 +428,7 @@ function TelaInicio({onCadastrar,onLogin,sessao,participantes,pixInfo}){
             ['🏆','1ª FASE APENAS','72 partidas da Fase de Grupos. O bolão encerra com o último jogo da fase de grupos.'],
             ['⏱️','TEMPO DE JOGO','Apenas 90 minutos + acréscimos oficiais. Sem prorrogação ou pênaltis.'],
             ['⚽','RESULTADOS','Somente resultados oficiais reconhecidos pela FIFA são válidos.'],
-            ['⏰','PRAZO','Apostas encerram em 10/06/2026 às 23h59 (Brasília). Após isso, nenhuma alteração.'],
+            ['⏰','PRAZO','Prazo oficial: 10/06/2026 às 12h00. Apostas tardias aceitas até 20h00 a critério do administrador. Após o prazo, nenhuma alteração.'],
             ['👁️','TRANSPARÊNCIA','Todos os prognósticos ficam visíveis a todos após o encerramento das apostas.'],
             ['💰','SEM TAXA','NÃO há cobrança de taxa de administração. 100% do valor arrecadado vai ao(s) vencedor(es).'],
             ['🎉','CARÁTER','Este bolão é um passatempo familiar e de entretenimento entre amigos e família.'],
@@ -459,10 +459,10 @@ function TelaInicio({onCadastrar,onLogin,sessao,participantes,pixInfo}){
               <th style={{textAlign:'center',padding:'7px 8px',color:COR.amarelo}}>Pts</th>
             </tr></thead>
             <tbody>
-              {[['Placar exato (decisivo)','2×1','2×1',5,'#22c55e'],['Empate exato com gols','2×2','2×2',4,'#16a34a'],
-                ['Só placar do vencedor','2×1','2×0',3,'#84cc16'],['Só placar do vencido','3×1','2×1',2,'#eab308'],
-                ['Empate exato 0×0','0×0','0×0',2,'#eab308'],['Vencedor certo, ambos errados','3×2','2×1',1,'#f97316'],
-                ['Empate certo, placar errado','0×0','1×1',1,'#f97316'],['Errou completamente','2×1','0×1',0,'#ef4444'],
+              {[['Placar exato — acertou o placar completo da partida','2×1','2×1',5,'#22c55e'],['Empate exato com gols — acertou o placar completo','2×2','2×2',4,'#16a34a'],
+                ['Acertou o resultado + placar do vencedor (placar do perdedor errado)','2×1','2×0',3,'#84cc16'],['Acertou o resultado + placar do perdedor* (placar do vencedor errado)','3×1','2×1',2,'#eab308'],
+                ['Empate exato 0×0 ** (jogo já começa zerado)','0×0','0×0',2,'#eab308'],['Acertou apenas quem venceu — ambos os placares errados','3×2','2×1',1,'#f97316'],
+                ['Acertou o empate — placar errado','0×0','1×1',1,'#f97316'],['Errou o resultado — nenhum ponto','2×1','0×1',0,'#ef4444'],
               ['⚠️ Jogo cancelado (sem resultado oficial FIFA)','–','–','–','#6b7280'],
             ].map(([s,p,r,pt,c],i)=>(
                 <tr key={i} style={{background:i%2?'transparent':'rgba(255,255,255,0.02)',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
@@ -476,6 +476,11 @@ function TelaInicio({onCadastrar,onLogin,sessao,participantes,pixInfo}){
           </table>
           <div style={{background:'rgba(255,160,0,0.08)',border:'1px solid rgba(255,160,0,0.25)',borderRadius:8,padding:'9px 13px',marginTop:10,fontSize:'0.8em',color:'#fbbf24',lineHeight:1.7}}>
             <strong>⚠️ Suspensão temporária:</strong> o placar só vale após encerramento oficial pela FIFA. Jogo cancelado sem resultado FIFA = sem pontuação nessa partida.
+          </div>
+          <div style={{background:'rgba(255,160,0,0.06)',border:'1px solid rgba(255,160,0,0.2)',borderRadius:8,padding:'8px 12px',marginTop:8,fontSize:'0.78em',color:'#fbbf24',lineHeight:1.7}}>
+            * Placar do perdedor: times mais fracos tendem a marcar menos, tornando esse placar mais previsível do que o do vencedor.<br/>
+            ** 0×0: o jogo já começa zerado, facilitando esse prognóstico — por isso vale menos do que um empate com gols.<br/>
+            ⚠️ Em qualquer categoria, para pontuar é obrigatório acertar o resultado (quem ganhou ou empate).
           </div>
         </div>
       </div>
