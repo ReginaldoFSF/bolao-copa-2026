@@ -234,30 +234,6 @@ function Tag({children,cor=COR.verde}){return <span style={{background:cor,color
 function Inp({value,onChange,placeholder,type='text',style={},disabled}){return <input value={value} onChange={onChange} placeholder={placeholder} type={type} disabled={disabled} style={{...S.inp,...style}} />;}
 function Btn({children,onClick,cor=COR.verde,disabled,style={}}){return <button className="btn" onClick={onClick} disabled={disabled} style={{...S.btn(cor),opacity:disabled?.5:1,...style}}>{children}</button>;}
 
-function BannerPrazo(){
-  const[show,setShow]=useState(false);
-  const[encerrado,setEncerrado]=useState(false);
-  useEffect(()=>{
-    const check=()=>{
-      const now=new Date();
-      const diff=PRAZO-now;
-      setEncerrado(now>PRAZO_TARDIO);
-      setShow(diff>0&&diff<86400000); // menos de 24h
-    };
-    check();const i=setInterval(check,60000);return()=>clearInterval(i);
-  },[]);
-  if(encerrado) return(
-    <div style={{background:'rgba(185,28,28,0.95)',color:'#fff',textAlign:'center',padding:'10px 16px',position:'sticky',top:44,zIndex:99,borderBottom:'2px solid #ef4444',fontWeight:700}}>
-      🔒 APOSTAS ENCERRADAS · Sistema travado · {NOME_BOLAO}
-    </div>
-  );
-  if(show) return(
-    <div style={{background:'rgba(234,88,12,0.9)',color:'#fff',textAlign:'center',padding:'8px 16px',position:'sticky',top:44,zIndex:99,fontWeight:700,fontSize:'0.88em'}}>
-      ⚠️ ATENÇÃO: Apostas encerram em menos de 24 horas! Não perca o prazo!
-    </div>
-  );
-  return null;
-}
 
 function BannerPrazo(){
   const[tipo,setTipo]=useState('');
