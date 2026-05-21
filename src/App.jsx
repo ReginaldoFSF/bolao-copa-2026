@@ -3,10 +3,17 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 // ================================================================
 // DADOS BASE
 // ================================================================
-const NOME_BOLAO = "Bolão Craque do Pitaco (Família Débora e Marcus)";
-const PRAZO = new Date('2026-06-10T23:59:00-03:00');
+const NOME_BOLAO = "Bolão Craque do Pitaco";
+const PRAZO = new Date('2026-06-10T12:00:00-03:00');
+const PRAZO_TARDIO = new Date('2026-06-10T20:00:00-03:00');
 const VALOR_APOSTA = 50;
 const SENHA_ADMIN_PADRAO = "Copa2026@DM";
+const RESPONSAVEL_NOME = "Reginaldo Ferreira da Silva Filho";
+const RESPONSAVEL_TEL  = "(71) 99961-9102";
+const PIX_CHAVE        = "(71) 99961-9102";
+const PIX_TIPO         = "Telefone";
+const PIX_BANCO        = "Nubank";
+const LINK_BOLAO       = "bolao-copa-2026-zeta.vercel.app";
 
 // Códigos de bandeira para flagcdn.com
 const FLAG_CODES = {
@@ -123,6 +130,11 @@ function calcPontos(prog, res) {
   if(pW===wS) return 3; if(pL===lS) return 2; return 1;
 }
 function calcTotal(progs,res){return JOGOS.reduce((a,j)=>{const p=progs?.[j.id],r=res?.[j.id];if(!p||!r)return a;return a+(calcPontos(p,r)??0);},0);}
+function calcStats(progs,res){
+  let pts=0,c5=0,c4=0;
+  JOGOS.forEach(j=>{const p=progs?.[j.id],r=res?.[j.id];if(!p||!r)return;const v=calcPontos(p,r)??0;pts+=v;if(v===5)c5++;if(v===4)c4++;});
+  return {pts,c5,c4};
+}
 
 const COR={verde:'#009c3b',amarelo:'#FFDF00',azul:'#002776',vermelho:'#EF4444',verde_claro:'#22c55e',laranja:'#f97316'};
 
@@ -152,6 +164,37 @@ function djb2(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCodeAt
 function gerarId(){return Date.now().toString(36)+Math.random().toString(36).substr(2,8);}
 function gerarPin(){return Math.random().toString(36).substr(2,6).toUpperCase();}
 function prazoPassou(){return new Date()>PRAZO;}
+function prazoTardioPassou(){return new Date()>PRAZO_TARDIO;}
+function mascaraTel(tel){
+  if(!tel) return '';
+  const d=tel.replace(/\D/g,'');
+  if(d.length<10) return tel;
+  return '('+d.slice(0,2)+') •••••-'+d.slice(-4);
+}
+function calcRateio(ranking, totalArrecadado){
+  // Agrupa por pontuação aplicando critério de desempate
+  // 1º critério: total pts; 2º: qtd de 5pts; 3º: qtd de 4pts → divide prêmio da posição
+  const grupos = [];
+  let i=0;
+  while(i<ranking.length){
+    let j=i+1;
+    while(j<ranking.length && ranking[j].pts===ranking[i].pts &&
+          ranking[j].c5===ranking[i].c5 && ranking[j].c4===ranking[i].c4) j++;
+    grupos.push(ranking.slice(i,j));
+    i=j;
+  }
+  const premios=[0.60,0.30,0.10];
+  const result={};
+  let posIdx=0;
+  grupos.forEach(g=>{
+    if(posIdx>=3){g.forEach(p=>result[p.id]=0);return;}
+    const pct=premios[posIdx]??0;
+    const val=Math.round((totalArrecadado*pct/g.length)*100)/100;
+    g.forEach(p=>result[p.id]=val);
+    posIdx+=g.length;
+  });
+  return result;
+}
 function formatarTel(t){return t.replace(/\D/g,'').replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');}
 
 // ================================================================
@@ -190,6 +233,61 @@ function Bandeira({code,size=20}){
 function Tag({children,cor=COR.verde}){return <span style={{background:cor,color:'#fff',borderRadius:6,padding:'2px 9px',fontSize:'0.75em',fontWeight:700,whiteSpace:'nowrap'}}>{children}</span>;}
 function Inp({value,onChange,placeholder,type='text',style={},disabled}){return <input value={value} onChange={onChange} placeholder={placeholder} type={type} disabled={disabled} style={{...S.inp,...style}} />;}
 function Btn({children,onClick,cor=COR.verde,disabled,style={}}){return <button className="btn" onClick={onClick} disabled={disabled} style={{...S.btn(cor),opacity:disabled?.5:1,...style}}>{children}</button>;}
+
+function BannerPrazo(){
+  const[show,setShow]=useState(false);
+  const[encerrado,setEncerrado]=useState(false);
+  useEffect(()=>{
+    const check=()=>{
+      const now=new Date();
+      const diff=PRAZO-now;
+      setEncerrado(now>PRAZO_TARDIO);
+      setShow(diff>0&&diff<86400000); // menos de 24h
+    };
+    check();const i=setInterval(check,60000);return()=>clearInterval(i);
+  },[]);
+  if(encerrado) return(
+    <div style={{background:'rgba(185,28,28,0.95)',color:'#fff',textAlign:'center',padding:'10px 16px',position:'sticky',top:44,zIndex:99,borderBottom:'2px solid #ef4444',fontWeight:700}}>
+      🔒 APOSTAS ENCERRADAS · Sistema travado · {NOME_BOLAO}
+    </div>
+  );
+  if(show) return(
+    <div style={{background:'rgba(234,88,12,0.9)',color:'#fff',textAlign:'center',padding:'8px 16px',position:'sticky',top:44,zIndex:99,fontWeight:700,fontSize:'0.88em'}}>
+      ⚠️ ATENÇÃO: Apostas encerram em menos de 24 horas! Não perca o prazo!
+    </div>
+  );
+  return null;
+}
+
+function BannerPrazo(){
+  const[tipo,setTipo]=useState('');
+  useEffect(()=>{
+    const check=()=>{
+      const now=new Date();
+      if(now>PRAZO_TARDIO){setTipo('encerrado');}
+      else if(now>PRAZO){setTipo('tardio');}
+      else if(PRAZO-now<86400000){setTipo('alerta24h');}
+      else{setTipo('');}
+    };
+    check();const i=setInterval(check,30000);return()=>clearInterval(i);
+  },[]);
+  if(tipo==='encerrado') return(
+    <div style={{background:'#b91c1c',color:'#fff',textAlign:'center',padding:'10px 16px',fontWeight:900,fontSize:'0.95em',letterSpacing:1,position:'sticky',top:44,zIndex:99}}>
+      🔒 APOSTAS ENCERRADAS — SISTEMA TRAVADO
+    </div>
+  );
+  if(tipo==='tardio') return(
+    <div style={{background:'rgba(234,88,12,0.95)',color:'#fff',textAlign:'center',padding:'8px',fontWeight:700,fontSize:'0.85em',position:'sticky',top:44,zIndex:99}}>
+      ⏰ Prazo oficial encerrado. Apostas tardias aceitas até 20h, a critério do administrador.
+    </div>
+  );
+  if(tipo==='alerta24h') return(
+    <div style={{background:'rgba(234,88,12,0.85)',color:'#fff',textAlign:'center',padding:'8px',fontWeight:700,fontSize:'0.85em',position:'sticky',top:44,zIndex:99}}>
+      ⚠️ ATENÇÃO: Menos de 24 horas para o encerramento das apostas! Não perca o prazo!
+    </div>
+  );
+  return null;
+}
 
 function Countdown(){
   const[t,setT]=useState('');
@@ -260,6 +358,7 @@ function Header({tela,setTela,sessao,onSair,travado}){
     {id:'todos',ic:'👁️',l:'Prognósticos'},{id:'paises',ic:'🌍',l:'Seleções'},
     ...(sessao?[{id:'meus',ic:'📋',l:'Meus'}]:[]),
     {id:'admin',ic:'🔐',l:'Admin'},
+    {id:'guia',ic:'📖',l:'Guia'},
   ];
   return(
     <div style={{background:'rgba(0,0,0,0.6)',backdropFilter:'blur(14px)',borderBottom:`2px solid ${COR.amarelo}22`,position:'sticky',top:0,zIndex:100}}>
@@ -314,14 +413,25 @@ function TelaInicio({onCadastrar,onLogin,sessao,participantes,pixInfo}){
         </div>
         <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
           {!prazo&&!sessao&&<Btn onClick={onCadastrar} style={{fontSize:'1.05em',padding:'12px 32px',background:'linear-gradient(135deg,#009c3b,#007a2f)'}}>🎯 Fazer Minha Aposta</Btn>}
-          {!prazo&&!sessao&&<div style={{marginTop:8,fontSize:'0.78em',color:'#6b7280'}}>Já se cadastrou? <span style={{color:'#22c55e',cursor:'pointer',textDecoration:'underline'}} onClick={onLogin}>Entrar com meu PIN</span></div>}
+          {!prazo&&!sessao&&<Btn onClick={onLogin} cor='#1e3a8a' style={{fontSize:'0.95em',padding:'10px 22px',marginTop:4}}>🔑 Já me cadastrei — Entrar com PIN</Btn>}
           {sessao&&<Tag cor={COR.verde}>✅ Olá, {sessao.nome}! Veja seus prognósticos no menu.</Tag>}
-          {prazo&&!sessao&&<Tag cor={COR.vermelho}>❌ Período de inscrições encerrado.</Tag>}
+          {prazoTardioPassou()&&!sessao&&(
+            <div style={{background:'rgba(185,28,28,0.15)',border:'2px solid #ef4444',borderRadius:12,padding:'14px 20px',textAlign:'center',width:'100%',maxWidth:400}}>
+              <div style={{fontSize:'1.3em',fontWeight:900,color:'#ef4444',marginBottom:4}}>⛔ APOSTAS ENCERRADAS</div>
+              <div style={{fontSize:'0.82em',color:'#fca5a5'}}>Acompanhe a classificação em tempo real</div>
+            </div>
+          )}
+          {!prazoTardioPassou()&&prazoPassou()&&!sessao&&<Tag cor={COR.laranja}>⚠️ Prazo oficial encerrado. Apostas tardias a critério do admin até 20h.</Tag>}
+          <a href={'https://wa.me/?text='+encodeURIComponent('⚽ Participe do Bolão Craque do Pitaco! Acesse: https://'+LINK_BOLAO)}
+            target="_blank"
+            style={{background:'#25D366',color:'#fff',borderRadius:10,padding:'10px 20px',fontSize:'0.88em',fontWeight:700,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6,marginTop:4}}>
+            💬 Compartilhar no WhatsApp
+          </a>
         </div>
       </div>
 
       {/* PIX */}
-      {pixInfo?.chave&&(
+      {true&&(
         <div style={{...S.card({background:'rgba(0,156,59,0.15)',border:`2px solid ${COR.verde}`})}}>
           <h3 style={{margin:'0 0 10px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.2em'}}>💳 Pagamento via PIX — R$ {VALOR_APOSTA},00 por aposta</h3>
           <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
@@ -439,8 +549,8 @@ function TelaAcesso({modo,sb,onSucesso,onVoltar,travado}){
     if(prazo||travado){setErr('Período de apostas encerrado.');return;}
     setL(true);setErr('');
     try{
-      const p=gerarPin(),id=gerarId();
-      await sb.post('participantes',{id,nome:nomeFinal,telefone:tel.trim(),num_aposta:naVal,indicado_por:indicado.trim()||null,codigo_hash:djb2(p),pago:false,pronosticos:{}});
+      const p=gerarPin(),id=gerarId(),pinTexto=p;
+      await sb.post('participantes',{id,nome:nomeFinal,telefone:tel.trim(),num_aposta:naVal,indicado_por:indicado.trim()||null,codigo_hash:djb2(p),pin_texto:pinTexto,pago:false,pago_individualmente:false,aceite_termos:true,aceite_termos_em:new Date().toISOString(),pronosticos:{},criado_em:new Date().toISOString(),atualizado_em:new Date().toISOString()});
       await Sess.set('bolao:sessao',{id,nome:nomeFinal});
       setPG(p);setPasso(2);
     }catch(e){
@@ -514,6 +624,14 @@ function TelaAcesso({modo,sb,onSucesso,onVoltar,travado}){
           <Inp value={pinVal} onChange={e=>setPin(e.target.value.toUpperCase())} placeholder="Ex: A7B2C9" style={{letterSpacing:6,fontWeight:700,textTransform:'uppercase',fontSize:'1.1em'}} maxLength={6} />
         </div>
       )}
+      {!prazoTardioPassou()&&modo==='cadastro'&&(
+        <div style={{display:'flex',alignItems:'flex-start',gap:8,padding:'10px 12px',background:'rgba(0,156,59,0.08)',border:'1px solid rgba(0,156,59,0.25)',borderRadius:8,marginBottom:14}}>
+          <input type="checkbox" id="aceite" defaultChecked style={{marginTop:3,accentColor:'#009c3b',width:16,height:16,cursor:'pointer'}} required />
+          <label htmlFor="aceite" style={{fontSize:'0.8em',color:'#d4e8d4',cursor:'pointer',lineHeight:1.5}}>
+            Li e concordo com as regras do Bolão Craque do Pitaco, conforme descritas neste site.
+          </label>
+        </div>
+      )}
       {err&&<div style={{background:'rgba(239,68,68,0.15)',border:'1px solid #ef4444',borderRadius:8,padding:'10px 14px',marginBottom:14,fontSize:'0.83em',color:'#fca5a5'}}>{err}</div>}
       <Btn onClick={modo==='cadastro'?cadastrar:entrar} disabled={load||(prazo&&modo==='cadastro')} style={{width:'100%',padding:'13px',fontSize:'1.05em'}}>
         {load?'⏳ Aguarde...':modo==='cadastro'?'Cadastrar e Gerar PIN':'Entrar com PIN'}
@@ -526,10 +644,11 @@ function TelaAcesso({modo,sb,onSucesso,onVoltar,travado}){
 // ================================================================
 // FORM PROGNÓSTICOS (72 JOGOS)
 // ================================================================
-function FormPronosticos({sb,participanteId,initProgs,bloqueado}){
+function FormPronosticos({sb,participanteId,initProgs,bloqueado,pagoIndividualmente}){
   const[progs,setProgs]=useState(()=>{const o={};JOGOS.forEach(j=>o[j.id]={casa:'',fora:''});Object.assign(o,initProgs??{});return o;});
   const[grupo,setGrupo]=useState('A');
   const[sv,setSaving]=useState(false);
+  const bloq=bloqueado||pagoIndividualmente;
   const[msg,setMsg]=useState('');
   const total=useMemo(()=>JOGOS.filter(j=>progs[j.id]?.casa!==''&&progs[j.id]?.fora!=='').length,[progs]);
 
@@ -578,9 +697,9 @@ function FormPronosticos({sb,participanteId,initProgs,bloqueado}){
                       <span style={{fontSize:'0.82em',color:'#e5e7eb'}}>{tc.nome}</span>
                       <Bandeira code={FLAG_CODES[j.casa]} size={14} /><span style={{fontSize:'1.1em'}}>{tc.flag}</span>
                     </span>
-                    <input type="number" min="0" max="30" value={c} onChange={e=>set(j.id,'casa',e.target.value)} disabled={bloqueado} style={S.sInp} />
+                    <input type="number" min="0" max="30" value={c} onChange={e=>set(j.id,'casa',e.target.value)} disabled={bloq} style={S.sInp} />
                     <span style={{color:'#6b7280',fontWeight:700}}>×</span>
-                    <input type="number" min="0" max="30" value={f} onChange={e=>set(j.id,'fora',e.target.value)} disabled={bloqueado} style={S.sInp} />
+                    <input type="number" min="0" max="30" value={f} onChange={e=>set(j.id,'fora',e.target.value)} disabled={bloq} style={S.sInp} />
                     <span style={{flex:'1 1 100px',display:'flex',alignItems:'center',gap:5}}>
                       <span style={{fontSize:'1.1em'}}>{tf.flag}</span><Bandeira code={FLAG_CODES[j.fora]} size={14} />
                       <span style={{fontSize:'0.82em',color:'#e5e7eb'}}>{tf.nome}</span>
@@ -604,7 +723,14 @@ function FormPronosticos({sb,participanteId,initProgs,bloqueado}){
 // ================================================================
 function TelaClassificacao({participantes,resultados,sessaoId,totalArrecadado}){
   const res=JOGOS.filter(j=>resultados[j.id]!=null).length;
-  const ranking=useMemo(()=>participantes.filter(p=>p.pago).map(p=>({...p,pts:calcTotal(p.pronosticos,resultados)})).sort((a,b)=>b.pts-a.pts),[participantes,resultados]);
+  const ranking=useMemo(()=>{
+    const base=participantes.filter(p=>p.pago).map(p=>{
+      const s=calcStats(p.pronosticos,resultados);
+      return{...p,...s};
+    }).sort((a,b)=>b.pts-a.pts||b.c5-a.c5||b.c4-a.c4);
+    return base;
+  },[participantes,resultados]);
+  const rateio=useMemo(()=>calcRateio(ranking,totalArrecadado),[ranking,totalArrecadado]);
   const medals=['🥇','🥈','🥉'];
   return(
     <div style={{maxWidth:740,margin:'0 auto'}}>
@@ -650,6 +776,85 @@ function TelaClassificacao({participantes,resultados,sessaoId,totalArrecadado}){
           <div style={{fontSize:'0.66em',color:'#4b5563',marginTop:2}}>↑ 72 jogos · 🟢 acerto · 🟡🟠 parcial · 🔴 erro</div>
         </div>
       ))}
+
+      <MiniEstatisticas participantes={participantes} resultados={resultados} />
+        </div>
+  );
+}
+
+// ================================================================
+// MINI ESTATÍSTICAS
+// ================================================================
+function MiniEstatisticas({participantes,resultados}){
+  const pagos=participantes.filter(p=>p.pago);
+  const jogosComRes=JOGOS.filter(j=>resultados[j.id]!=null);
+  if(jogosComRes.length===0) return null;
+
+  // Quem tem mais 5pts
+  const stats=pagos.map(p=>{const s=calcStats(p.pronosticos,resultados);return{...p,...s};});
+  const top5=stats.sort((a,b)=>b.c5-a.c5)[0];
+
+  // Jogo com mais acertos
+  let jogoMax=null,maxAc=0,jogoMin=null,minAc=999;
+  jogosComRes.forEach(j=>{
+    const ac=pagos.filter(p=>{const pts=calcPontos(p.pronosticos?.[j.id],resultados[j.id]);return pts===5||pts===4||pts===3||pts===2||pts===1;}).length;
+    const exact=pagos.filter(p=>calcPontos(p.pronosticos?.[j.id],resultados[j.id])===5).length;
+    if(exact>maxAc){maxAc=exact;jogoMax=j;}
+    if(exact<minAc){minAc=exact;jogoMin=j;}
+  });
+
+  // Total de 5pts
+  const total5=stats.reduce((a,p)=>a+p.c5,0);
+
+  // Palpites mais populares (jogos sem resultado ainda)
+  const semRes=JOGOS.filter(j=>!resultados[j.id]).slice(0,3);
+  const populares=semRes.map(j=>{
+    const freq={};
+    pagos.forEach(p=>{const pg=p.pronosticos?.[j.id];if(pg?.casa!==''&&pg?.fora!==''){const k=`${pg.casa}×${pg.fora}`;freq[k]=(freq[k]||0)+1;}});
+    const top=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+    return{j,top,total:pagos.length};
+  }).filter(x=>x.top);
+
+  const tc=(j)=>TIMES[j.casa]?.flag+' '+TIMES[j.casa]?.nome;
+  const tf=(j)=>TIMES[j.fora]?.flag+' '+TIMES[j.fora]?.nome;
+
+  return(
+    <div style={{...S.card({marginTop:16,background:'rgba(0,0,0,0.2)',border:'1px solid rgba(255,255,255,0.08)'})}}>
+      <h2 style={{margin:'0 0 12px',fontFamily:'Barlow Condensed',fontSize:'1.1em',color:'#86efac'}}>
+        📊 Estatísticas gerais · {jogosComRes.length} jogos realizados
+      </h2>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(155px,1fr))',gap:8,marginBottom:12}}>
+        {top5&&<div style={{background:'rgba(0,0,0,0.25)',borderRadius:8,padding:'8px 10px'}}>
+          <div style={{fontSize:'0.68em',color:'#6b8c6b',marginBottom:2}}>🎯 Mais placares exatos</div>
+          <div style={{fontWeight:700,fontSize:'0.88em'}}>{top5.nome.split(' ')[0]}</div>
+          <div style={{fontSize:'0.72em',color:'#4ade80'}}>{top5.c5} acertos de 5 pts</div>
+        </div>}
+        {jogoMax&&<div style={{background:'rgba(0,0,0,0.25)',borderRadius:8,padding:'8px 10px'}}>
+          <div style={{fontSize:'0.68em',color:'#6b8c6b',marginBottom:2}}>🔥 Mais acertos</div>
+          <div style={{fontWeight:700,fontSize:'0.8em'}}>{TIMES[jogoMax.casa]?.flag} × {TIMES[jogoMax.fora]?.flag}</div>
+          <div style={{fontSize:'0.72em',color:'#4ade80'}}>{maxAc} de {pagos.length} acertaram</div>
+        </div>}
+        {jogoMin&&<div style={{background:'rgba(0,0,0,0.25)',borderRadius:8,padding:'8px 10px'}}>
+          <div style={{fontSize:'0.68em',color:'#6b8c6b',marginBottom:2}}>😬 Menos acertos</div>
+          <div style={{fontWeight:700,fontSize:'0.8em'}}>{TIMES[jogoMin.casa]?.flag} × {TIMES[jogoMin.fora]?.flag}</div>
+          <div style={{fontSize:'0.72em',color:'#ef4444'}}>{minAc} de {pagos.length} acertaram</div>
+        </div>}
+        <div style={{background:'rgba(0,0,0,0.25)',borderRadius:8,padding:'8px 10px'}}>
+          <div style={{fontSize:'0.68em',color:'#6b8c6b',marginBottom:2}}>⭐ Total placares exatos</div>
+          <div style={{fontWeight:900,fontSize:'1.4em',color:'#FFDF00',lineHeight:1}}>{total5}</div>
+          <div style={{fontSize:'0.7em',color:'#6b8c6b'}}>em {jogosComRes.length*pagos.length} palpites</div>
+        </div>
+      </div>
+      {populares.length>0&&<>
+        <div style={{fontSize:'0.75em',color:'#6b8c6b',marginBottom:6}}>📌 Palpite mais popular — próximos jogos</div>
+        {populares.map(({j,top,total})=>(
+          <div key={j.id} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 8px',background:'rgba(0,0,0,0.2)',borderRadius:7,marginBottom:4,fontSize:'0.78em'}}>
+            <span style={{flex:1}}>{TIMES[j.casa]?.flag} {TIMES[j.casa]?.nome} × {TIMES[j.fora]?.nome} {TIMES[j.fora]?.flag}</span>
+            <span style={{fontFamily:'monospace',fontWeight:700,color:'#FFDF00'}}>{top[0]}</span>
+            <span style={{color:'#6b8c6b'}}>{top[1]}/{total} apostaram</span>
+          </div>
+        ))}
+      </>}
     </div>
   );
 }
@@ -830,6 +1035,40 @@ function ResultRow({jogo,resL,savId,onSalvar}){
   );
 }
 
+
+// ================================================================
+// EXPORTAR BACKUP CSV
+// ================================================================
+function exportarCSV(participantes, resultados){
+  const toCSV=rows=>rows.map(r=>r.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  // Arquivo 1: apostadores
+  const h1=['Reg','Nome','Telefone','PIN','Pago','Cadastro','Ult.Alteração','Confirmado','Pts','5pts','4pts'];
+  const d1=participantes.map(p=>{
+    const s=calcStats(p.pronosticos,resultados);
+    return[
+      p.numero_registro??'',p.nome,p.telefone,p.pin_texto??'',
+      p.pago?'Sim':'Não',
+      p.criado_em?new Date(p.criado_em).toLocaleString('pt-BR'):'',
+      p.ultima_alt_em?new Date(p.ultima_alt_em).toLocaleString('pt-BR'):'',
+      p.confirmado_em?new Date(p.confirmado_em).toLocaleString('pt-BR'):'',
+      s.pts,s.c5,s.c4
+    ];
+  });
+  // Arquivo 2: prognósticos
+  const h2=['Nome',...JOGOS.map(j=>TIMES[j.casa]?.nome+'×'+TIMES[j.fora]?.nome)];
+  const d2=participantes.map(p=>[
+    p.nome,
+    ...JOGOS.map(j=>{const pg=p.pronosticos?.[j.id];return pg?.casa!==''?`${pg?.casa??''}×${pg?.fora??''}`:'-';})
+  ]);
+  const dl=(csv,nome)=>{
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;a.click();
+  };
+  const dt=new Date().toISOString().slice(0,10);
+  dl(toCSV([h1,...d1]),`bolao_apostadores_${dt}.csv`);
+  setTimeout(()=>dl(toCSV([h2,...d2]),`bolao_prognosticos_${dt}.csv`),600);
+}
+
 // ================================================================
 // TELA: ADMIN
 // ================================================================
@@ -855,7 +1094,16 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
   };
 
   const salvarRes=async(jid,c,f)=>{if(c===''||f==='')return;setSavId(jid);try{await sb.upsert('resultados',{jogo_id:jid,casa:parseInt(c),fora:parseInt(f)});setResL(r=>({...r,[jid]:{casa:parseInt(c),fora:parseInt(f)}}));await onRefresh();}catch(e){alert('Erro: '+e.message);}setSavId('');};
-  const togglePago=async p=>{try{await sb.patch('participantes',`id=eq.${p.id}`,{pago:!p.pago});await onRefresh();}catch(e){alert('Erro: '+e.message);}};
+  const togglePago=async p=>{
+    try{
+      const novoPago=!p.pago;
+      const extra=novoPago
+        ?{pago_individualmente:true,confirmado_em:new Date().toISOString()}
+        :{pago_individualmente:false,confirmado_em:null};
+      await sb.patch('participantes',`id=eq.${p.id}`,{pago:novoPago,...extra});
+      await onRefresh();
+    }catch(e){alert('Erro: '+e.message);}
+  };
   const toggleTravado=async()=>{try{const nv=travado?'false':'true';await sb.upsert('configuracoes',{chave:'sistema_travado',valor:nv});await onRefresh();setMsg(nv==='true'?'🔒 Sistema TRAVADO! Apostas encerradas.':'🔓 Sistema DESBLOQUEADO.');}catch(e){setMsg('Erro: '+e.message);}};
   const salvarSenha=async()=>{if(!novaSenha)return;try{await sb.upsert('configuracoes',{chave:'admin_hash',valor:djb2(novaSenha)});setMsg('✅ Senha alterada!');setNS('');}catch(e){setMsg('Erro: '+e.message);}};
   const salvarPix=async()=>{
@@ -969,10 +1217,169 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
 
       {/* Alterar senha */}
       <div style={S.card()}>
+      {/* Exportar Backup */}
+      <div style={{...S.card({background:'rgba(0,80,20,0.15)',border:'2px solid #009c3b',marginBottom:16})}}>
+        <h3 style={{margin:'0 0 8px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.1em'}}>
+          💾 Backup dos Dados
+        </h3>
+        <p style={{margin:'0 0 12px',fontSize:'0.8em',color:'#a8c4a8',lineHeight:1.6}}>
+          Recomendado: faça um backup diário durante a Copa. Gera 2 arquivos CSV: apostadores e prognósticos.
+        </p>
+        <Btn onClick={()=>exportarCSV(participantes,resultados)}
+          cor='#009c3b'
+          style={{fontSize:'0.95em',padding:'12px 24px',boxShadow:'0 0 14px rgba(0,156,59,0.6)',animation:'pulse 1.5s infinite'}}>
+          📥 Exportar Backup CSV
+        </Btn>
+      </div>
+
         <h3 style={{margin:'0 0 12px',fontFamily:'Barlow Condensed',color:COR.amarelo}}>🔑 Alterar Senha Admin</h3>
         <div style={{display:'flex',gap:10}}>
           <Inp value={novaSenha} onChange={e=>setNS(e.target.value)} placeholder="Nova senha..." type="password" />
           <Btn onClick={salvarSenha} cor={COR.azul}>Salvar</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ================================================================
+// TELA: GUIA DO APOSTADOR
+// ================================================================
+function TelaGuia(){
+  const passos=[
+    {n:'1',t:'Acesse o site',c:'Abra o navegador e acesse: '+LINK_BOLAO+'. Funciona em celular, tablet e computador, sem instalar nada.',cor:COR.verde},
+    {n:'2',t:'Clique em "Fazer Minha Aposta"',c:'Preencha: nome completo, WhatsApp com DDD. Se for sua 2ª aposta, selecione "2ª Aposta". Se foi convidado por familiar, indique o nome dele.',cor:COR.verde},
+    {n:'3',t:'Anote seu PIN de acesso',c:'O sistema gera um PIN de 6 caracteres (ex: A7B2C9). ANOTE IMEDIATAMENTE — não pode ser recuperado depois. Use-o para acessar de qualquer dispositivo.',cor:'#1e3a8a'},
+    {n:'4',t:'Marque que aceita as regras',c:'Marque a caixa de aceite das regras antes de enviar o cadastro.',cor:COR.verde},
+    {n:'5',t:'Preencha os 72 prognósticos',c:'Jogos organizados por grupo A–L. Para cada jogo, digite o placar que você prevê. Pode salvar parcialmente e voltar depois. Prazo: 10/06/2026 às 12h. Enquanto não for confirmado pelo admin, pode editar livremente.',cor:COR.verde},
+    {n:'6',t:'Realize o PIX de R$ 50,00',c:'Dados na página inicial. Chave PIX (Telefone): '+PIX_CHAVE+' · '+PIX_BANCO+' · '+RESPONSAVEL_NOME+'. Coloque seu nome na descrição. O admin confirma em até 24h. Após a confirmação, seus prognósticos são travados.',cor:'#c2410c'},
+    {n:'7',t:'Confirmação e número de registro',c:'Após confirmar o pagamento, você recebe um número de registro (#001, #002...). Sua aposta aparece na classificação e no placar acumulado.',cor:COR.verde},
+  ];
+  const acompanhamento=[
+    {ic:'🏆',t:'Classificação',c:'Menu "Classificação". Ranking atualizado automaticamente após cada resultado. Barra colorida: verde=acerto, laranja=parcial, vermelho=erro. Total arrecadado sempre visível.'},
+    {ic:'👁️',t:'Prognósticos — Momento 1',c:'Após 10/06 às 20h: todos os palpites ficam visíveis. Ainda sem resultados. Você confere o que todos apostaram — mas não dá mais para mudar!'},
+    {ic:'📊',t:'Prognósticos — Momento 2',c:'Durante os jogos: o admin lança o placar oficial após cada partida. Para cada jogo: seu palpite + resultado real + pontuação. Tudo público, total transparência.'},
+    {ic:'🌍',t:'Seleções',c:'Informações dos 48 países: capital, população, títulos, curiosidades. Fonte: FIFA.com e CIA World Factbook.'},
+  ];
+  return(
+    <div style={{maxWidth:780,margin:'0 auto'}}>
+      <div style={{...S.card({marginBottom:16,background:`linear-gradient(135deg,rgba(0,39,118,0.4),rgba(0,156,59,0.3))`,border:`2px solid ${COR.amarelo}44`})}}>
+        <h1 style={{margin:'0 0 4px',fontFamily:'Barlow Condensed',fontSize:'1.5em'}}>📖 Guia do Apostador</h1>
+        <p style={{margin:0,fontSize:'0.82em',color:'#6b8c6b'}}>Tudo que você precisa saber para participar — do cadastro ao prêmio.</p>
+      </div>
+
+      <div style={{...S.card({marginBottom:14})}}>
+        <h2 style={{margin:'0 0 14px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.15em'}}>⚡ O que é automático e o que você precisa fazer</h2>
+        <div style={{display:'flex',flexDirection:'column',gap:6,fontSize:'0.82em'}}>
+          {[
+            ['✅','Geração do PIN após o cadastro','Automático'],
+            ['✅','Número de registro (#001, #002...)','Automático ao confirmar pagamento'],
+            ['✅','Bloqueio geral em 10/06 às 20h','Automático'],
+            ['✅','Bloqueio individual ao confirmar pag.','Automático — admin confirma, trava'],
+            ['✅','Cálculo de pontos após resultado','Automático — tempo real'],
+            ['✅','Classificação atualizada','Automático — tempo real'],
+            ['📝','Preencher os 72 prognósticos','Você (apostador)'],
+            ['💰','Realizar o PIX de R$ 50,00','Você (apostador)'],
+            ['👤','Confirmar pagamento','Administrador — até 24h'],
+            ['⚽','Lançar resultados dos jogos','Administrador — após cada jogo'],
+          ].map(([ic,a,b],i)=>(
+            <div key={i} style={{display:'flex',gap:10,padding:'6px 10px',background:i%2?'transparent':'rgba(255,255,255,0.03)',borderRadius:6}}>
+              <span style={{minWidth:20}}>{ic}</span>
+              <span style={{flex:1,color:'#d4e8d4'}}>{a}</span>
+              <span style={{color:ic==='✅'?COR.verde_claro:'#fb923c',fontWeight:600,textAlign:'right'}}>{b}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{...S.card({marginBottom:14})}}>
+        <h2 style={{margin:'0 0 14px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.15em'}}>📋 Passo a Passo — Como fazer sua aposta</h2>
+        {passos.map((p,i)=>(
+          <div key={i} style={{display:'flex',gap:12,padding:'10px 4px',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+            <div style={{minWidth:32,height:32,background:p.cor,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'0.9em',flexShrink:0}}>{p.n}</div>
+            <div>
+              <div style={{fontWeight:700,fontSize:'0.9em',marginBottom:3,color:'#f3f4f6'}}>{p.t}</div>
+              <div style={{fontSize:'0.8em',color:'#a8c4a8',lineHeight:1.6}}>{p.c}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{...S.card({marginBottom:14})}}>
+        <h2 style={{margin:'0 0 14px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.15em'}}>🏆 Como acompanhar durante a Copa</h2>
+        {acompanhamento.map((a,i)=>(
+          <div key={i} style={{display:'flex',gap:12,padding:'10px 4px',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+            <span style={{fontSize:'1.6em',minWidth:32}}>{a.ic}</span>
+            <div>
+              <div style={{fontWeight:700,fontSize:'0.9em',marginBottom:3,color:'#f3f4f6'}}>{a.t}</div>
+              <div style={{fontSize:'0.8em',color:'#a8c4a8',lineHeight:1.6}}>{a.c}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{...S.card({marginBottom:14})}}>
+        <h2 style={{margin:'0 0 12px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.15em'}}>🏅 Tabela de Pontuação</h2>
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:'0.78em'}}>
+          <thead><tr style={{borderBottom:`2px solid ${COR.verde}44`}}>
+            <th style={{textAlign:'left',padding:'6px 8px',color:'#6b8c6b'}}>Situação</th>
+            <th style={{textAlign:'center',padding:'6px',color:'#6b8c6b'}}>Prog.</th>
+            <th style={{textAlign:'center',padding:'6px',color:'#6b8c6b'}}>Real</th>
+            <th style={{textAlign:'center',padding:'6px',color:COR.amarelo}}>Pts</th>
+          </tr></thead>
+          <tbody>
+            {[
+              ['Placar exato — acertou o placar completo','2×1','2×1',5,'#4ade80'],
+              ['Empate exato com gols — placar completo','2×2','2×2',4,'#22c55e'],
+              ['Acertou resultado + placar do vencedor','2×1','2×0',3,'#86efac'],
+              ['Acertou resultado + placar do perdedor*','3×1','2×1',2,'#eab308'],
+              ['Empate exato 0×0 **','0×0','0×0',2,'#eab308'],
+              ['Acertou apenas o resultado (vencedor)','3×2','2×1',1,'#f97316'],
+              ['Acertou o empate, placar errado','0×0','1×1',1,'#f97316'],
+              ['Errou o resultado','2×1','0×1',0,'#ef4444'],
+              ['Jogo cancelado — sem resultado FIFA','—','—','—','#6b7280'],
+            ].map(([s,p,r,pt,c],i)=>(
+              <tr key={i} style={{background:i%2?'transparent':'rgba(255,255,255,0.02)',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                <td style={{padding:'5px 8px',color:'#d4e8d4'}}>{s}</td>
+                <td style={{padding:'5px',textAlign:'center',fontFamily:'monospace',color:'#6b8c6b'}}>{p}</td>
+                <td style={{padding:'5px',textAlign:'center',fontFamily:'monospace',color:'#6b8c6b'}}>{r}</td>
+                <td style={{padding:'5px 8px',textAlign:'center',fontWeight:800,color:c}}>{String(pt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{background:'rgba(255,160,0,0.08)',border:'1px solid rgba(255,160,0,0.25)',borderRadius:8,padding:'8px 12px',marginTop:10,fontSize:'0.75em',color:'#fbbf24',lineHeight:1.7}}>
+          * Placar do perdedor: times mais fracos tendem a marcar menos, tornando esse placar mais previsível.<br/>
+          ** 0×0: o jogo já começa zerado, facilitando esse prognóstico.<br/>
+          ⚠️ Para pontuar é obrigatório acertar o resultado (quem ganhou ou empate). Acertar apenas um placar sem acertar o resultado = 0 pts.
+        </div>
+      </div>
+
+      <div style={{...S.card({marginBottom:14})}}>
+        <h2 style={{margin:'0 0 12px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.15em'}}>💰 Premiação</h2>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:10}}>
+          {[['🥇','1º lugar','60%'],['🥈','2º lugar','30%'],['🥉','3º lugar','10%']].map(([m,p,v])=>(
+            <div key={p} style={{background:'rgba(0,0,0,0.25)',borderRadius:8,padding:'10px',textAlign:'center'}}>
+              <div style={{fontSize:'1.5em'}}>{m}</div>
+              <div style={{fontWeight:700,fontSize:'0.85em'}}>{p}</div>
+              <div style={{fontSize:'1.1em',fontWeight:900,color:COR.amarelo}}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontSize:'0.8em',color:'#a8c4a8',lineHeight:1.7}}>
+          <p style={{margin:'0 0 6px'}}>• Em caso de empate: quem tiver mais placares exatos (5 pts) leva a posição. Se ainda empatado, quem tiver mais acertos de 4 pts. Se ainda empatado, divide o prêmio daquela posição.</p>
+          <p style={{margin:'0 0 6px'}}>• O vencedor será contactado pelo WhatsApp pelo administrador: <strong style={{color:COR.amarelo}}>{RESPONSAVEL_NOME} · {RESPONSAVEL_TEL}</strong></p>
+          <p style={{margin:0}}>• Por segurança, seus dados de PIX serão solicitados apenas no momento do pagamento.</p>
+        </div>
+      </div>
+
+      <div style={{...S.card({background:'rgba(0,0,0,0.2)',border:`1px solid ${COR.verde}33`})}}>
+        <h2 style={{margin:'0 0 10px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.15em'}}>📋 Regras em resumo</h2>
+        <div style={{fontSize:'0.8em',color:'#a8c4a8',lineHeight:1.85}}>
+          {['✅ 1ª fase apenas — 72 partidas','✅ 90 min + acréscimos (sem prorrogação/pênaltis)','✅ Resultados oficiais FIFA','✅ Prazo oficial: 10/06 às 12h | Tardio: até 20h a critério do admin','✅ 100% do valor ao(s) vencedor(es) — zero taxa','✅ Passatempo recreativo familiar','✅ Menores: aposta em nome do responsável','✅ Múltiplas apostas: "Nome (Aposta 1)", "Nome (Aposta 2)"','✅ Amigos da família podem participar','❌ Sem devolução após o 1º jogo (11/06/2026)','🚨 Suspensão definitiva: devolução integral'].map((r,i)=>(
+            <div key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.05)',padding:'3px 0'}}>{r}</div>
+          ))}
         </div>
       </div>
     </div>
@@ -993,7 +1400,7 @@ export default function App(){
   const[modoAcesso,setMA]=useState('cadastro');
   const[parts,setParts]=useState([]);
   const[resV,setRes]=useState({});
-  const[pixInfo,setPixInfo]=useState({chave:'326.986.235-00',tipo:'CPF',titular:'Reginaldo Ferreira da Silva Filho',banco:'Santander'});
+  const[pixInfo,setPixInfo]=useState({chave:PIX_CHAVE,tipo:PIX_TIPO,titular:RESPONSAVEL_NOME,banco:PIX_BANCO});
   const[travV,setTravado]=useState(false);
   const[loading,setLoading]=useState(true);
   const[atualizado,setAt]=useState(null);
@@ -1072,6 +1479,7 @@ export default function App(){
             <button className="btn" onClick={loadData} style={{background:'transparent',border:'none',color:'#9ca3af',cursor:'pointer',fontSize:'0.9em',marginLeft:6}}>🔄</button>
           </div>
         )}
+        <BannerPrazo />
         <div style={{padding:'22px 14px',maxWidth:1000,margin:'0 auto'}}>
           {telaV==='inicio'&&<TelaInicio onCadastrar={()=>{setMA('cadastro');setTela('acesso');}} onLogin={()=>{setMA('login');setTela('acesso');}} sessao={sessao} participantes={parts} pixInfo={pixInfo} />}
           {telaV==='acesso'&&<TelaAcesso modo={modoAcesso} sb={sbV} onSucesso={handleLogin} onVoltar={()=>setTela('inicio')} travado={travV} />}
@@ -1085,16 +1493,17 @@ export default function App(){
               {!meuPart?.pago&&<div style={{...S.card({marginBottom:14,background:'rgba(249,115,22,0.1)',border:'1px solid rgba(249,115,22,0.3)'})}}>
                 <p style={{margin:0,fontSize:'0.88em',color:'#fed7aa'}}>⚠️ Realize o PIX de <strong>R$ {VALOR_APOSTA},00</strong> e aguarde a confirmação do administrador para que sua aposta seja validada. Seus prognósticos já estão salvos.</p>
               </div>}
-              <FormPronosticos sb={sbV} participanteId={sessao.id} initProgs={meuPart?.pronosticos??{}} bloqueado={prazoPassou()||travV} />
+              <FormPronosticos sb={sbV} participanteId={sessao.id} initProgs={meuPart?.pronosticos??{}} bloqueado={prazoTardioPassou()||travV} pagoIndividualmente={meuPart?.pago_individualmente??false} />
             </div>
           )}
           {telaV==='classificacao'&&<TelaClassificacao participantes={parts} resultados={resV} sessaoId={sessao?.id} totalArrecadado={totalArrecadado} />}
           {telaV==='todos'&&<TelaTodos participantes={parts} resultados={resV} />}
           {telaV==='paises'&&<TelaPaises />}
+          {telaV==='guia'&&<TelaGuia />}
           {telaV==='admin'&&<TelaAdmin sb={sbV} participantes={parts} resultados={resV} onRefresh={loadData} travado={travV} />}
         </div>
         <div style={{textAlign:'center',padding:'14px',color:'#374151',fontSize:'0.7em',borderTop:'1px solid rgba(255,255,255,0.05)'}}>
-          {NOME_BOLAO} · Copa do Mundo FIFA 2026 · Apenas 90min + acréscimos · Resultados oficiais FIFA · Caráter recreativo familiar
+          {NOME_BOLAO} · Copa do Mundo FIFA 2026 · 90min + acréscimos · FIFA · Responsável: {RESPONSAVEL_NOME} · {RESPONSAVEL_TEL}
         </div>
       </div>
     </div>
