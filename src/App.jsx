@@ -1628,7 +1628,7 @@ export default function App(){
       if(ps)setParts(ps);
       if(rs){const o={};rs.forEach(r=>o[r.jogo_id]=r);setRes(o);}
       if(cfg){
-        const pix={chave:'',tipo:'CPF',titular:'',banco:''};
+        const pix={chave:PIX_CHAVE,tipo:PIX_TIPO,titular:RESPONSAVEL_NOME,banco:PIX_BANCO};
         cfg.forEach(c=>{
           if(c.chave==='pix_chave')pix.chave=c.valor;
           if(c.chave==='pix_tipo')pix.tipo=c.valor;
