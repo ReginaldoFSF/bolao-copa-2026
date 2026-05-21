@@ -49,16 +49,83 @@ const GRUPOS = {
   K:['Portugal','Congo','Uzbequistao','Colombia'],L:['Inglaterra','Croacia','Gana','Panama'],
 };
 
-const JOGOS = (() => {
-  const lista=[],d1=['11/06','12/06','13/06','14/06'],d2=['18/06','19/06','20/06','21/06'],d3=['24/06','25/06','26/06','27/06'];
-  Object.keys(GRUPOS).forEach((g,gi)=>{
-    const [t1,t2,t3,t4]=GRUPOS[g],di=gi%4;
-    lista.push({id:`${g}R1A`,grupo:g,rodada:1,casa:t1,fora:t2,data:d1[di]});lista.push({id:`${g}R1B`,grupo:g,rodada:1,casa:t3,fora:t4,data:d1[(di+1)%4]});
-    lista.push({id:`${g}R2A`,grupo:g,rodada:2,casa:t1,fora:t3,data:d2[di]});lista.push({id:`${g}R2B`,grupo:g,rodada:2,casa:t2,fora:t4,data:d2[(di+1)%4]});
-    lista.push({id:`${g}R3A`,grupo:g,rodada:3,casa:t1,fora:t4,data:d3[di]});lista.push({id:`${g}R3B`,grupo:g,rodada:3,casa:t2,fora:t3,data:d3[(di+1)%4]});
-  });
-  return lista;
-})();
+const const JOGOS = [
+  // ── RODADA 1 ─────────────────────────────────────────────
+  {id:'AR1A',grupo:'A',rodada:1,casa:'Mexico',        fora:'Africa_Sul',    data:'11/06 16h'},
+  {id:'AR1B',grupo:'A',rodada:1,casa:'Coreia',        fora:'Tchequia',      data:'11/06 23h'},
+  {id:'BR1A',grupo:'B',rodada:1,casa:'Canada',        fora:'Bosnia',        data:'12/06 16h'},
+  {id:'DR1A',grupo:'D',rodada:1,casa:'EUA',           fora:'Paraguai',      data:'12/06 22h'},
+  {id:'DR1B',grupo:'D',rodada:1,casa:'Australia',     fora:'Turquia',       data:'13/06 01h'},
+  {id:'BR1B',grupo:'B',rodada:1,casa:'Qatar',         fora:'Suica',         data:'13/06 16h'},
+  {id:'CR1A',grupo:'C',rodada:1,casa:'Brasil',        fora:'Marrocos',      data:'13/06 19h'},
+  {id:'CR1B',grupo:'C',rodada:1,casa:'Haiti',         fora:'Escocia',       data:'13/06 22h'},
+  {id:'ER1A',grupo:'E',rodada:1,casa:'Alemanha',      fora:'Curacao',       data:'14/06 14h'},
+  {id:'FR1A',grupo:'F',rodada:1,casa:'Holanda',       fora:'Japao',         data:'14/06 17h'},
+  {id:'ER1B',grupo:'E',rodada:1,casa:'Costa_Marfim',  fora:'Equador',       data:'14/06 20h'},
+  {id:'FR1B',grupo:'F',rodada:1,casa:'Suecia',        fora:'Tunisia',       data:'14/06 23h'},
+  {id:'HR1A',grupo:'H',rodada:1,casa:'Espanha',       fora:'Cabo_Verde',    data:'15/06 13h'},
+  {id:'GR1A',grupo:'G',rodada:1,casa:'Belgica',       fora:'Egito',         data:'15/06 16h'},
+  {id:'HR1B',grupo:'H',rodada:1,casa:'Arabia_Saudita',fora:'Uruguai',       data:'15/06 19h'},
+  {id:'GR1B',grupo:'G',rodada:1,casa:'Ira',           fora:'Nova_Zelandia', data:'15/06 22h'},
+  {id:'JR1A',grupo:'J',rodada:1,casa:'Austria',       fora:'Jordania',      data:'16/06 01h'},
+  {id:'IR1A',grupo:'I',rodada:1,casa:'Franca',        fora:'Senegal',       data:'16/06 16h'},
+  {id:'IR1B',grupo:'I',rodada:1,casa:'Iraque',        fora:'Noruega',       data:'16/06 19h'},
+  {id:'JR1B',grupo:'J',rodada:1,casa:'Argentina',     fora:'Algeria',       data:'16/06 22h'},
+  {id:'KR1A',grupo:'K',rodada:1,casa:'Portugal',      fora:'Congo',         data:'17/06 14h'},
+  {id:'LR1A',grupo:'L',rodada:1,casa:'Inglaterra',    fora:'Croacia',       data:'17/06 17h'},
+  {id:'LR1B',grupo:'L',rodada:1,casa:'Gana',          fora:'Panama',        data:'17/06 20h'},
+  {id:'KR1B',grupo:'K',rodada:1,casa:'Uzbequistao',   fora:'Colombia',      data:'17/06 23h'},
+  // ── RODADA 2 ─────────────────────────────────────────────
+  {id:'AR2A',grupo:'A',rodada:2,casa:'Tchequia',      fora:'Africa_Sul',    data:'18/06 13h'},
+  {id:'BR2A',grupo:'B',rodada:2,casa:'Suica',         fora:'Bosnia',        data:'18/06 16h'},
+  {id:'BR2B',grupo:'B',rodada:2,casa:'Canada',        fora:'Qatar',         data:'18/06 19h'},
+  {id:'AR2B',grupo:'A',rodada:2,casa:'Mexico',        fora:'Coreia',        data:'18/06 22h'},
+  {id:'DR2A',grupo:'D',rodada:2,casa:'Turquia',       fora:'Paraguai',      data:'19/06 01h'},
+  {id:'DR2B',grupo:'D',rodada:2,casa:'EUA',           fora:'Australia',     data:'19/06 16h'},
+  {id:'CR2A',grupo:'C',rodada:2,casa:'Escocia',       fora:'Marrocos',      data:'19/06 19h'},
+  {id:'CR2B',grupo:'C',rodada:2,casa:'Brasil',        fora:'Haiti',         data:'19/06 22h'},
+  {id:'FR2A',grupo:'F',rodada:2,casa:'Tunisia',       fora:'Japao',         data:'20/06 01h'},
+  {id:'FR2B',grupo:'F',rodada:2,casa:'Holanda',       fora:'Suecia',        data:'20/06 14h'},
+  {id:'ER2A',grupo:'E',rodada:2,casa:'Alemanha',      fora:'Costa_Marfim',  data:'20/06 17h'},
+  {id:'ER2B',grupo:'E',rodada:2,casa:'Equador',       fora:'Curacao',       data:'20/06 21h'},
+  {id:'HR2A',grupo:'H',rodada:2,casa:'Espanha',       fora:'Arabia_Saudita',data:'21/06 13h'},
+  {id:'GR2A',grupo:'G',rodada:2,casa:'Belgica',       fora:'Ira',           data:'21/06 16h'},
+  {id:'HR2B',grupo:'H',rodada:2,casa:'Uruguai',       fora:'Cabo_Verde',    data:'21/06 19h'},
+  {id:'GR2B',grupo:'G',rodada:2,casa:'Nova_Zelandia', fora:'Egito',         data:'21/06 22h'},
+  {id:'JR2A',grupo:'J',rodada:2,casa:'Jordania',      fora:'Algeria',       data:'22/06 00h'},
+  {id:'JR2B',grupo:'J',rodada:2,casa:'Argentina',     fora:'Austria',       data:'22/06 14h'},
+  {id:'IR2A',grupo:'I',rodada:2,casa:'Franca',        fora:'Iraque',        data:'22/06 18h'},
+  {id:'IR2B',grupo:'I',rodada:2,casa:'Noruega',       fora:'Senegal',       data:'22/06 21h'},
+  {id:'KR2A',grupo:'K',rodada:2,casa:'Portugal',      fora:'Uzbequistao',   data:'23/06 14h'},
+  {id:'LR2A',grupo:'L',rodada:2,casa:'Inglaterra',    fora:'Gana',          data:'23/06 17h'},
+  {id:'LR2B',grupo:'L',rodada:2,casa:'Panama',        fora:'Croacia',       data:'23/06 20h'},
+  {id:'KR2B',grupo:'K',rodada:2,casa:'Colombia',      fora:'Congo',         data:'23/06 23h'},
+  // ── RODADA 3 ─────────────────────────────────────────────
+  {id:'BR3A',grupo:'B',rodada:3,casa:'Suica',         fora:'Canada',        data:'24/06 16h'},
+  {id:'BR3B',grupo:'B',rodada:3,casa:'Bosnia',        fora:'Qatar',         data:'24/06 16h'},
+  {id:'CR3A',grupo:'C',rodada:3,casa:'Escocia',       fora:'Brasil',        data:'24/06 19h'},
+  {id:'CR3B',grupo:'C',rodada:3,casa:'Marrocos',      fora:'Haiti',         data:'24/06 19h'},
+  {id:'AR3A',grupo:'A',rodada:3,casa:'Tchequia',      fora:'Mexico',        data:'24/06 22h'},
+  {id:'AR3B',grupo:'A',rodada:3,casa:'Africa_Sul',    fora:'Coreia',        data:'24/06 22h'},
+  {id:'ER3A',grupo:'E',rodada:3,casa:'Curacao',       fora:'Costa_Marfim',  data:'25/06 17h'},
+  {id:'ER3B',grupo:'E',rodada:3,casa:'Equador',       fora:'Alemanha',      data:'25/06 17h'},
+  {id:'FR3A',grupo:'F',rodada:3,casa:'Japao',         fora:'Suecia',        data:'25/06 20h'},
+  {id:'FR3B',grupo:'F',rodada:3,casa:'Tunisia',       fora:'Holanda',       data:'25/06 20h'},
+  {id:'DR3A',grupo:'D',rodada:3,casa:'Turquia',       fora:'EUA',           data:'25/06 23h'},
+  {id:'DR3B',grupo:'D',rodada:3,casa:'Paraguai',      fora:'Australia',     data:'25/06 23h'},
+  {id:'IR3A',grupo:'I',rodada:3,casa:'Noruega',       fora:'Franca',        data:'26/06 16h'},
+  {id:'IR3B',grupo:'I',rodada:3,casa:'Senegal',       fora:'Iraque',        data:'26/06 16h'},
+  {id:'HR3A',grupo:'H',rodada:3,casa:'Cabo_Verde',    fora:'Arabia_Saudita',data:'26/06 21h'},
+  {id:'HR3B',grupo:'H',rodada:3,casa:'Uruguai',       fora:'Espanha',       data:'26/06 21h'},
+  {id:'GR3A',grupo:'G',rodada:3,casa:'Egito',         fora:'Ira',           data:'27/06 00h'},
+  {id:'GR3B',grupo:'G',rodada:3,casa:'Nova_Zelandia', fora:'Belgica',       data:'27/06 00h'},
+  {id:'LR3A',grupo:'L',rodada:3,casa:'Panama',        fora:'Inglaterra',    data:'27/06 18h'},
+  {id:'LR3B',grupo:'L',rodada:3,casa:'Croacia',       fora:'Gana',          data:'27/06 18h'},
+  {id:'KR3A',grupo:'K',rodada:3,casa:'Colombia',      fora:'Portugal',      data:'27/06 20h30'},
+  {id:'KR3B',grupo:'K',rodada:3,casa:'Congo',         fora:'Uzbequistao',   data:'27/06 20h30'},
+  {id:'JR3A',grupo:'J',rodada:3,casa:'Algeria',       fora:'Austria',       data:'27/06 23h'},
+  {id:'JR3B',grupo:'J',rodada:3,casa:'Jordania',      fora:'Argentina',     data:'27/06 23h'},
+];
 
 // ================================================================
 // INFORMAÇÕES DOS PAÍSES (Fonte: FIFA.com, CIA World Factbook, WorldBank)
