@@ -1216,6 +1216,7 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
                 {p.indicado_por&&<span style={{fontSize:'0.75em',color:'#9ca3af',marginLeft:8}}>👤 {p.indicado_por}</span>}
                 <div style={{fontSize:'0.72em',color:'#6b7280'}}>📱 {p.telefone} · {Object.values(p.pronosticos??{}).filter(x=>x.casa!=='').length}/72 prog.</div>
               </div>
+              {p.pin_texto&&<span style={{background:'rgba(255,223,0,0.12)',border:'1px solid rgba(255,223,0,0.35)',borderRadius:7,padding:'3px 10px',fontSize:'0.75em',fontFamily:'monospace',fontWeight:700,color:COR.amarelo,letterSpacing:2}}>PIN: {p.pin_texto}</span>}
               <Btn onClick={()=>togglePago(p)} cor='#374151' style={{fontSize:'0.78em',padding:'5px 12px'}}>Desconfirmar</Btn>
             </div>
           ))}
@@ -1235,6 +1236,7 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
                 {p.indicado_por&&<span style={{fontSize:'0.75em',color:'#9ca3af',marginLeft:8}}>👤 {p.indicado_por}</span>}
                 <div style={{fontSize:'0.72em',color:'#6b7280'}}>📱 {p.telefone} · Cadastrado em {new Date(p.criado_em).toLocaleDateString('pt-BR')}</div>
               </div>
+              {p.pin_texto&&<span style={{background:'rgba(249,115,22,0.15)',border:'1px solid rgba(249,115,22,0.4)',borderRadius:7,padding:'3px 10px',fontSize:'0.75em',fontFamily:'monospace',fontWeight:700,color:'#fb923c',letterSpacing:2}}>PIN: {p.pin_texto}</span>}
               <Btn onClick={()=>togglePago(p)} cor={COR.verde} style={{fontSize:'0.78em',padding:'5px 12px'}}>✅ Confirmar Pagamento</Btn>
             </div>
           ))}
