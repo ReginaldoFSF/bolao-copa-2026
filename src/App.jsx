@@ -49,7 +49,7 @@ const GRUPOS = {
   K:['Portugal','Congo','Uzbequistao','Colombia'],L:['Inglaterra','Croacia','Gana','Panama'],
 };
 
-const const JOGOS = [
+const JOGOS = [
   // ── RODADA 1 ─────────────────────────────────────────────
   {id:'AR1A',grupo:'A',rodada:1,casa:'Mexico',        fora:'Africa_Sul',    data:'11/06 16h'},
   {id:'AR1B',grupo:'A',rodada:1,casa:'Coreia',        fora:'Tchequia',      data:'11/06 23h'},
@@ -67,10 +67,10 @@ const const JOGOS = [
   {id:'GR1A',grupo:'G',rodada:1,casa:'Belgica',       fora:'Egito',         data:'15/06 16h'},
   {id:'HR1B',grupo:'H',rodada:1,casa:'Arabia_Saudita',fora:'Uruguai',       data:'15/06 19h'},
   {id:'GR1B',grupo:'G',rodada:1,casa:'Ira',           fora:'Nova_Zelandia', data:'15/06 22h'},
-  {id:'JR1A',grupo:'J',rodada:1,casa:'Austria',       fora:'Jordania',      data:'16/06 01h'},
+  {id:'JR1A',grupo:'J',rodada:1,casa:'Austria',       fora:'Jordania',      data:'17/06 01h'},
   {id:'IR1A',grupo:'I',rodada:1,casa:'Franca',        fora:'Senegal',       data:'16/06 16h'},
   {id:'IR1B',grupo:'I',rodada:1,casa:'Iraque',        fora:'Noruega',       data:'16/06 19h'},
-  {id:'JR1B',grupo:'J',rodada:1,casa:'Argentina',     fora:'Algeria',       data:'16/06 22h'},
+  {id:'JR1B',grupo:'J',rodada:1,casa:'Argentina',     fora:'Algeria',       data:'16/06 14h'},
   {id:'KR1A',grupo:'K',rodada:1,casa:'Portugal',      fora:'Congo',         data:'17/06 14h'},
   {id:'LR1A',grupo:'L',rodada:1,casa:'Inglaterra',    fora:'Croacia',       data:'17/06 17h'},
   {id:'LR1B',grupo:'L',rodada:1,casa:'Gana',          fora:'Panama',        data:'17/06 20h'},
@@ -84,7 +84,7 @@ const const JOGOS = [
   {id:'DR2B',grupo:'D',rodada:2,casa:'EUA',           fora:'Australia',     data:'19/06 16h'},
   {id:'CR2A',grupo:'C',rodada:2,casa:'Escocia',       fora:'Marrocos',      data:'19/06 19h'},
   {id:'CR2B',grupo:'C',rodada:2,casa:'Brasil',        fora:'Haiti',         data:'19/06 22h'},
-  {id:'FR2A',grupo:'F',rodada:2,casa:'Tunisia',       fora:'Japao',         data:'20/06 01h'},
+  {id:'FR2A',grupo:'F',rodada:2,casa:'Tunisia',       fora:'Japao',         data:'21/06 01h'},
   {id:'FR2B',grupo:'F',rodada:2,casa:'Holanda',       fora:'Suecia',        data:'20/06 14h'},
   {id:'ER2A',grupo:'E',rodada:2,casa:'Alemanha',      fora:'Costa_Marfim',  data:'20/06 17h'},
   {id:'ER2B',grupo:'E',rodada:2,casa:'Equador',       fora:'Curacao',       data:'20/06 21h'},
@@ -92,7 +92,7 @@ const const JOGOS = [
   {id:'GR2A',grupo:'G',rodada:2,casa:'Belgica',       fora:'Ira',           data:'21/06 16h'},
   {id:'HR2B',grupo:'H',rodada:2,casa:'Uruguai',       fora:'Cabo_Verde',    data:'21/06 19h'},
   {id:'GR2B',grupo:'G',rodada:2,casa:'Nova_Zelandia', fora:'Egito',         data:'21/06 22h'},
-  {id:'JR2A',grupo:'J',rodada:2,casa:'Jordania',      fora:'Algeria',       data:'22/06 00h'},
+  {id:'JR2A',grupo:'J',rodada:2,casa:'Jordania',      fora:'Algeria',       data:'23/06 00h'},
   {id:'JR2B',grupo:'J',rodada:2,casa:'Argentina',     fora:'Austria',       data:'22/06 14h'},
   {id:'IR2A',grupo:'I',rodada:2,casa:'Franca',        fora:'Iraque',        data:'22/06 18h'},
   {id:'IR2B',grupo:'I',rodada:2,casa:'Noruega',       fora:'Senegal',       data:'22/06 21h'},
@@ -1164,7 +1164,7 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
       await Promise.all([
         sb.upsert('configuracoes',{chave:'pix_chave',valor:pixCV}),
         sb.upsert('configuracoes',{chave:'pix_tipo',valor:pixT}),
-        sb.upsert('configuracoes',{chave:'pix_titular',valor:pixTit[0]}),
+        sb.upsert('configuracoes',{chave:'pix_titular',valor:pixTitVal}),
         sb.upsert('configuracoes',{chave:'pix_banco',valor:pixBanco}),
       ]);
       setMsg('✅ PIX configurado!');await onRefresh();
@@ -1268,10 +1268,8 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
         <Btn onClick={salvarPix} cor={COR.azul}>💾 Salvar Configuração PIX</Btn>
       </div>
 
-      {/* Alterar senha */}
-      <div style={S.card()}>
       {/* Exportar Backup */}
-      <div style={{...S.card({background:'rgba(0,80,20,0.15)',border:'2px solid #009c3b',marginBottom:16})}}>
+      <div style={{...S.card({background:'rgba(0,80,20,0.15)',border:'2px solid #009c3b'})}}>
         <h3 style={{margin:'0 0 8px',fontFamily:'Barlow Condensed',color:COR.amarelo,fontSize:'1.1em'}}>
           💾 Backup dos Dados
         </h3>
@@ -1285,6 +1283,8 @@ function TelaAdmin({sb,participantes,resultados,onRefresh,travado}){
         </Btn>
       </div>
 
+      {/* Alterar senha */}
+      <div style={S.card()}>
         <h3 style={{margin:'0 0 12px',fontFamily:'Barlow Condensed',color:COR.amarelo}}>🔑 Alterar Senha Admin</h3>
         <div style={{display:'flex',gap:10}}>
           <Inp value={novaSenha} onChange={e=>setNS(e.target.value)} placeholder="Nova senha..." type="password" />
