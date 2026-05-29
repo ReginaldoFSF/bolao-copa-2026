@@ -281,6 +281,12 @@ input[type=number]{-moz-appearance:textfield;}
 .fade{animation:fadeIn .3s ease;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}.pulse{animation:pulse 1.5s infinite;}
 @keyframes shine{0%{background-position:-200%}100%{background-position:200%}}
+.desktop-nav{display:flex;}
+.mobile-nav{display:none;}
+@media(max-width:700px){
+  .desktop-nav{display:none!important;}
+  .mobile-nav{display:flex!important;}
+}
 `;
 
 // Variáveis de estilo
@@ -396,6 +402,7 @@ function TelaConfig({onSalvar}){
 // HEADER + NAVEGAÇÃO
 // ================================================================
 function Header({tela,setTela,sessao,onSair,travado}){
+  const[menuAberto,setMenu]=useState(false);
   const navs=[
     {id:'inicio',ic:'🏠',l:'Início'},{id:'classificacao',ic:'🏆',l:'Classificação'},
     {id:'todos',ic:'👁️',l:'Prognósticos'},{id:'paises',ic:'🌍',l:'Seleções'},
@@ -403,27 +410,45 @@ function Header({tela,setTela,sessao,onSair,travado}){
     {id:'admin',ic:'🔐',l:'Admin'},
     {id:'guia',ic:'📖',l:'Guia'},
   ];
+  const irPara=(id)=>{setTela(id);setMenu(false);};
   return(
     <div style={{background:'rgba(0,0,0,0.6)',backdropFilter:'blur(14px)',borderBottom:`2px solid ${COR.amarelo}22`,position:'sticky',top:0,zIndex:100}}>
-      <div style={{maxWidth:980,margin:'0 auto',padding:'0 12px',display:'flex',alignItems:'center',gap:6,height:52,flexWrap:'wrap'}}>
-        <span style={{fontFamily:'Barlow Condensed',fontWeight:900,fontSize:'1.05em',color:COR.amarelo,marginRight:8,whiteSpace:'nowrap'}}>
-          ⚽ Bolão Craque do Pitaco {travado&&<Tag cor='#ef4444'>🔒 TRAVADO</Tag>}
+      <div style={{maxWidth:980,margin:'0 auto',padding:'0 12px',display:'flex',alignItems:'center',height:48}}>
+        <span style={{fontFamily:'Barlow Condensed',fontWeight:900,fontSize:'1em',color:COR.amarelo,whiteSpace:'nowrap',flex:1}}>
+          ⚽ {NOME_BOLAO} {travado&&<Tag cor='#ef4444' style={{fontSize:'0.7em'}}>🔒</Tag>}
         </span>
-        <div style={{display:'flex',gap:3,flexWrap:'wrap',flex:1}}>
+        <div style={{display:'flex',gap:2,alignItems:'center'}} className="desktop-nav">
           {navs.map(n=>(
-            <button key={n.id} className="btn" onClick={()=>setTela(n.id)}
-              style={{background:tela===n.id?`${COR.verde}88`:'transparent',border:tela===n.id?`1px solid ${COR.verde}`:'1px solid transparent',borderRadius:8,color:'#fff',padding:'4px 10px',cursor:'pointer',fontSize:'0.8em',fontFamily:'Barlow'}}>
+            <button key={n.id} className="btn" onClick={()=>irPara(n.id)}
+              style={{background:tela===n.id?`${COR.verde}88`:'transparent',border:tela===n.id?`1px solid ${COR.verde}`:'1px solid transparent',borderRadius:8,color:'#fff',padding:'4px 9px',cursor:'pointer',fontSize:'0.78em',fontFamily:'Barlow',whiteSpace:'nowrap'}}>
               {n.ic} {n.l}
             </button>
           ))}
+          {sessao&&<Btn onClick={onSair} cor='#374151' style={{fontSize:'0.72em',padding:'4px 9px',marginLeft:4}}>Sair</Btn>}
         </div>
-        {sessao&&(
-          <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <span style={{fontSize:'0.75em',color:'#9ca3af'}}>{sessao.nome}</span>
-            <Btn onClick={onSair} cor='#374151' style={{fontSize:'0.75em',padding:'4px 10px'}}>Sair</Btn>
-          </div>
-        )}
+        <div style={{display:'flex',alignItems:'center',gap:8}} className="mobile-nav">
+          {sessao&&<span style={{fontSize:'0.65em',color:'#9ca3af',maxWidth:110,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sessao.nome}</span>}
+          <button onClick={()=>setMenu(m=>!m)} style={{background:'transparent',border:`1px solid ${COR.amarelo}44`,borderRadius:8,color:COR.amarelo,padding:'5px 10px',cursor:'pointer',fontSize:'1.1em',lineHeight:1}}>
+            {menuAberto?'✕':'☰'}
+          </button>
+        </div>
       </div>
+      {menuAberto&&(
+        <div className="mobile-nav" style={{background:'rgba(0,0,0,0.95)',borderTop:`1px solid ${COR.amarelo}22`,padding:'8px 12px',display:'flex',flexDirection:'column',gap:4}}>
+          {navs.map(n=>(
+            <button key={n.id} className="btn" onClick={()=>irPara(n.id)}
+              style={{background:tela===n.id?`${COR.verde}44`:'transparent',border:tela===n.id?`1px solid ${COR.verde}88`:'1px solid transparent',borderRadius:8,color:'#fff',padding:'10px 14px',cursor:'pointer',fontSize:'0.9em',fontFamily:'Barlow',textAlign:'left',width:'100%'}}>
+              {n.ic} {n.l}
+            </button>
+          ))}
+          {sessao&&(
+            <button className="btn" onClick={()=>{onSair();setMenu(false);}}
+              style={{background:'transparent',border:'1px solid #374151',borderRadius:8,color:'#9ca3af',padding:'10px 14px',cursor:'pointer',fontSize:'0.9em',textAlign:'left',width:'100%',marginTop:4}}>
+              🚪 Sair ({sessao.nome})
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -599,6 +624,9 @@ function TelaAcesso({modo,sb,onSucesso,onVoltar,travado}){
     try{
       const p=gerarPin(),id=gerarId(),pinTexto=p;
       await sb.post('participantes',{id,nome:nomeFinal,telefone:tel.trim(),num_aposta:naVal,indicado_por:indicado.trim()||null,codigo_hash:djb2(p),pin_texto:pinTexto,pago:false,pago_individualmente:false,aceite_termos:true,aceite_termos_em:new Date().toISOString(),pronosticos:{},criado_em:new Date().toISOString(),atualizado_em:new Date().toISOString()});
+      // Verifica se o dado foi realmente salvo no banco antes de mostrar sucesso
+      const verif=await sb.get('participantes',`id=eq.${id}&select=id`);
+      if(!verif||verif.length===0)throw new Error('Cadastro não confirmado pelo servidor. Tente novamente.');
       await Sess.set('bolao:sessao',{id,nome:nomeFinal});
       setPG(p);setPasso(2);
     }catch(e){
