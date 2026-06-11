@@ -405,7 +405,7 @@ function Header({tela,setTela,sessao,onSair,travado}){
   const[menuAberto,setMenu]=useState(false);
   const navs=[
     {id:'inicio',ic:'🏠',l:'Início'},{id:'classificacao',ic:'🏆',l:'Classificação'},
-    {id:'todos',ic:'👁️',l:'Prognósticos'},{id:'paises',ic:'🌍',l:'Seleções'},
+    {id:'todos',ic:'👁️',l:'Prognósticos'},{id:'agenda',ic:'📅',l:'Agenda'},{id:'paises',ic:'🌍',l:'Seleções'},
     ...(sessao?[{id:'meus',ic:'📋',l:'Meus'}]:[]),
     {id:'admin',ic:'🔐',l:'Admin'},
     {id:'guia',ic:'📖',l:'Guia'},
@@ -997,6 +997,142 @@ function TelaTodos({participantes,resultados}){
 // ================================================================
 // TELA: SELEÇÕES / PAÍSES
 // ================================================================
+
+// ================================================================
+// TELA: AGENDA (jogos em ordem cronológica por data)
+// ================================================================
+function TelaAgenda({resultados}){
+  // Agrupa jogos por data
+  const porData = {};
+  JOGOS.forEach(j=>{
+    const dia = j.data.split(' ')[0]; // "11/06"
+    if(!porData[dia]) porData[dia]=[];
+    porData[dia].push(j);
+  });
+
+  const diasOrdenados = Object.keys(porData).sort((a,b)=>{
+    const [da,ma]=a.split('/').map(Number);
+    const [db,mb]=b.split('/').map(Number);
+    return ma!==mb?ma-mb:da-db;
+  });
+
+  const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const nomeDia=(dataStr)=>{
+    const[d,m]=dataStr.split('/').map(Number);
+    const dt=new Date(2026,m-1,d);
+    return diasSemana[dt.getDay()];
+  };
+  const nomesMes=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const formataDia=(dataStr)=>{
+    const[d,m]=dataStr.split('/').map(Number);
+    return `${nomeDia(dataStr)}, ${d} de ${nomesMes[m]}`;
+  };
+
+  const hoje = new Date();
+  const diaHoje = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}`;
+
+  // Conta resultados lançados
+  const totalRes = Object.keys(resultados).length;
+
+  return(
+    <div style={{maxWidth:780,margin:'0 auto'}}>
+      <div style={{...S.card({marginBottom:18,background:'linear-gradient(135deg,rgba(0,39,118,0.5),rgba(0,156,59,0.3))',border:`2px solid ${COR.amarelo}44`,textAlign:'center'})}}>
+        <h2 style={{margin:'0 0 4px',fontFamily:'Barlow Condensed',fontSize:'1.6em',color:COR.amarelo}}>📅 Agenda da Copa 2026</h2>
+        <p style={{margin:0,fontSize:'0.82em',color:'#9ca3af'}}>72 jogos · 1ª Fase · {totalRes} resultado{totalRes!==1?'s':''} lançado{totalRes!==1?'s':''}</p>
+      </div>
+
+      {diasOrdenados.map(dia=>{
+        const jogos=porData[dia];
+        const isHoje=dia===diaHoje;
+        const todosFuturos=jogos.every(j=>!resultados[j.id]);
+        const todosPassados=jogos.every(j=>resultados[j.id]);
+
+        return(
+          <div key={dia} style={{marginBottom:14}}>
+            {/* Cabeçalho do dia */}
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
+              <div style={{
+                background: isHoje ? COR.amarelo : todosPassados ? 'rgba(0,156,59,0.3)' : 'rgba(255,255,255,0.07)',
+                border: `1px solid ${isHoje ? COR.amarelo : todosPassados ? COR.verde : 'rgba(255,255,255,0.15)'}`,
+                borderRadius:10,padding:'4px 14px',
+                fontFamily:'Barlow Condensed',fontWeight:700,fontSize:'0.95em',
+                color: isHoje ? '#000' : todosPassados ? COR.verde_claro : '#d1d5db',
+                whiteSpace:'nowrap'
+              }}>
+                {isHoje && '📍 HOJE · '}{formataDia(dia)}
+              </div>
+              <div style={{flex:1,height:1,background:'rgba(255,255,255,0.08)'}} />
+              <span style={{fontSize:'0.72em',color:'#6b7280'}}>{jogos.filter(j=>resultados[j.id]).length}/{jogos.length} resultados</span>
+            </div>
+
+            {/* Jogos do dia */}
+            <div style={{display:'flex',flexDirection:'column',gap:5}}>
+              {jogos.map(j=>{
+                const res=resultados[j.id];
+                const hora=j.data.split(' ')[1]||'';
+                const t1=TIMES[j.casa];
+                const t2=TIMES[j.fora];
+                const grupo=j.grupo;
+
+                return(
+                  <div key={j.id} style={{
+                    ...S.card({padding:'10px 16px'}),
+                    display:'flex',alignItems:'center',gap:10,
+                    background: res ? 'rgba(0,156,59,0.1)' : 'rgba(0,0,0,0.3)',
+                    border: res ? `1px solid ${COR.verde}44` : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius:10,
+                  }}>
+                    {/* Hora + Grupo */}
+                    <div style={{minWidth:60,textAlign:'center'}}>
+                      <div style={{fontSize:'0.82em',fontWeight:700,color:COR.amarelo,fontFamily:'Barlow Condensed'}}>{hora}</div>
+                      <div style={{fontSize:'0.65em',color:'#6b7280',marginTop:1}}>Gr.{grupo}</div>
+                    </div>
+
+                    {/* Time casa */}
+                    <div style={{flex:1,display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
+                      <span style={{fontSize:'0.85em',fontWeight:600,textAlign:'right'}}>{t1?.nome||j.casa}</span>
+                      <span style={{fontSize:'1.2em'}}>{t1?.flag||''}</span>
+                    </div>
+
+                    {/* Placar */}
+                    <div style={{minWidth:70,textAlign:'center'}}>
+                      {res ? (
+                        <span style={{
+                          background:'rgba(0,156,59,0.25)',border:`1px solid ${COR.verde}66`,
+                          borderRadius:8,padding:'4px 12px',
+                          fontFamily:'Barlow Condensed',fontWeight:900,fontSize:'1.15em',
+                          color:'#fff',letterSpacing:2
+                        }}>{res.casa} × {res.fora}</span>
+                      ) : (
+                        <span style={{
+                          background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.12)',
+                          borderRadius:8,padding:'4px 12px',
+                          fontFamily:'Barlow Condensed',fontSize:'1em',color:'#4b5563',letterSpacing:2
+                        }}>— × —</span>
+                      )}
+                    </div>
+
+                    {/* Time fora */}
+                    <div style={{flex:1,display:'flex',alignItems:'center',gap:6,justifyContent:'flex-start'}}>
+                      <span style={{fontSize:'1.2em'}}>{t2?.flag||''}</span>
+                      <span style={{fontSize:'0.85em',fontWeight:600}}>{t2?.nome||j.fora}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div style={{minWidth:24,textAlign:'center'}}>
+                      {res ? <span style={{color:COR.verde,fontSize:'1em'}}>✅</span> : <span style={{color:'#374151',fontSize:'0.8em'}}>⏳</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function TelaPaises(){
   const[busca,setBusca]=useState('');
   const[grV,setGrupo]=useState('Todos');
@@ -1798,6 +1934,7 @@ export default function App(){
           )}
           {telaV==='classificacao'&&<TelaClassificacao participantes={parts} resultados={resV} sessaoId={sessao?.id} totalArrecadado={totalArrecadado} />}
           {telaV==='todos'&&<TelaTodos participantes={parts} resultados={resV} />}
+          {telaV==='agenda'&&<TelaAgenda resultados={resV} />}
           {telaV==='paises'&&<TelaPaises />}
           {telaV==='guia'&&<TelaGuia />}
           {telaV==='admin'&&<TelaAdmin sb={sbV} participantes={parts} resultados={resV} onRefresh={loadData} travado={travV} />}
